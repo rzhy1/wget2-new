@@ -3,10 +3,10 @@ name: "Build wget2 deps"
 on:
   workflow_dispatch:
   push:
+    branches: [ main ]
     paths:
-      - "deps.yml"
-      - "deps.sh"
-
+      - '.github/workflows/deps.yml'
+      - 'deps.sh'
 jobs:
   build_wget2:
     runs-on: ubuntu-24.04
