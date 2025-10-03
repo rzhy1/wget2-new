@@ -3,7 +3,7 @@ name: "Build wget2 deps"
 on:
   workflow_dispatch:
   push:
-    branches:
+    paths:
       - "deps.yml"
       - "deps.sh"
 
