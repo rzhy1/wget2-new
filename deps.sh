@@ -222,5 +222,5 @@ build_gnutls
 cd "$HOME/usr/local"
 echo ">>> 开始打包依赖：wget2-deps.tar.zst"
 tar -I zstd -cf wget2-deps.tar.zst "$PREFIX"
-
+cp -fv "$HOME/usr/local/wget2-deps.tar.zst" "${GITHUB_WORKSPACE}" || exit 1
 echo ">>> 打包完成：$(ls -lh wget2-deps.tar.zst)"
