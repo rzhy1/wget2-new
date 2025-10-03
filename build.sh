@@ -67,8 +67,6 @@ build_brotli() {
   pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
   echo "显示libbrotlidec.pc内容"
   cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - 查找brotli文件结果如下⭐⭐⭐⭐⭐⭐" 
-  find / -name "*brotli*"
 }
 
 build_xz() {
