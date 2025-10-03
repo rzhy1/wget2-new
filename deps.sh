@@ -21,103 +21,11 @@ ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
 
 mkdir -p $INSTALLDIR
 cd $INSTALLDIR
-build_brotli() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build brotli⭐⭐⭐⭐⭐⭐"
-  local start_time=$(date +%s.%N)
-  git clone --depth=1 https://github.com/google/brotli.git || exit 1
-  cd brotli || exit 1
-  mkdir build && cd build
-  cmake .. \
-    -DCMAKE_SYSTEM_NAME=Windows \
-    -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
-    -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
-    -DCMAKE_INSTALL_PREFIX=$INSTALLDIR \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DCMAKE_BUILD_TYPE=Release || exit 1
-  make -j$(nproc) install || exit 1
-  sed -i 's/^Libs: .*/& -lbrotlicommon/' "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
-  cd ../.. && rm -rf brotli
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/brotli_duration.txt"
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommo结果如下⭐⭐⭐⭐⭐⭐" 
-  pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
-  echo "显示libbrotlidec.pc内容"
-  cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - 查找brotli文件结果如下⭐⭐⭐⭐⭐⭐" 
-  find / -name "*brotli*"
-}
-
-build_xz() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build xz⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
-  apt-get purge xz-utils
-  git clone --depth=1 https://github.com/tukaani-project/xz.git || { echo "Git clone failed"; exit 1; }
-  cd xz || { echo "cd xz failed"; exit 1; }
-  mkdir build
-  cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release -DXZ_NLS=ON -DBUILD_SHARED_LIBS=OFF || { echo "CMake failed"; exit 1; }
-  cmake --build . -- -j$(nproc) || { echo "Build failed"; exit 1; }
-  cmake --install . || { echo "Install failed"; exit 1; }
-  xz --version
-  cd ../.. && rm -rf xz
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/xz_duration.txt"
-}
-
-build_zstd() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build zstd⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
-  # 创建 Python 虚拟环境并安装meson
-  rm -rf /tmp/venv
-  python3 -m venv /tmp/venv
-  source /tmp/venv/bin/activate
-  pip3 install --no-cache-dir meson pytest
-
-  # 编译 zstd
-  git clone --depth=1 https://github.com/facebook/zstd.git || exit 1
-  cd zstd || exit 1
-  meson setup \
-    --cross-file=${GITHUB_WORKSPACE}/cross_file.txt \
-    --backend=ninja \
-    --prefix=$INSTALLDIR \
-    --libdir=$INSTALLDIR/lib \
-    --bindir=$INSTALLDIR/bin \
-    --pkg-config-path="$INSTALLDIR/lib/pkgconfig" \
-    -Dbin_programs=false \
-    -Dstatic_runtime=true \
-    -Ddefault_library=static \
-    -Db_lto=true --optimization=2 \
-    build/meson builddir-st || exit 1
-  rm -f /usr/local/bin/zstd*
-  rm -f /usr/local/bin/*zstd
-  meson compile -C builddir-st || exit 1
-  meson install -C builddir-st || exit 1
-  cd .. && rm -rf zstd
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/zstd_duration.txt"
-}
-
-build_zlib-ng() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build zlib-ng⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
-  git clone --depth=1 https://github.com/zlib-ng/zlib-ng || exit 1
-  cd zlib-ng || exit 1
-  CROSS_PREFIX="x86_64-w64-mingw32-" ARCH="x86_64" CFLAGS="-Os" CC=x86_64-w64-mingw32-gcc ./configure --prefix=$INSTALLDIR --static --64 --zlib-compat || exit 1
-  make -j$(nproc) || exit 1
-  make install || exit 1
-  cd .. && rm -rf zlib-ng
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/zlib-ng_duration.txt"
-}
 
 build_gmp() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gmp⭐⭐⭐⭐⭐⭐" 
   start_time=$(date +%s.%N)
-  wget -nv -O- https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz | tar x --xz
+  wget -nv -O- https://mirrors.kernel.org/gnu/gmp/gmp-6.3.0.tar.xz | tar x --xz
   cd gmp-* || exit
   ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR"
   make -j$(nproc) || exit 1
@@ -128,20 +36,10 @@ build_gmp() {
   echo "$duration" > "$INSTALLDIR/gmp_duration.txt"
 }
 
-build_gnulibmirror() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnulib-mirror⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
-  git clone --recursive --depth=1 https://gitlab.com/gnuwget/gnulib-mirror.git gnulib || exit 1
-  export GNULIB_REFDIR=$INSTALLDIR/gnulib
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/gnulibmirror_duration.txt"
-}
-
 build_libiconv() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libiconv⭐⭐⭐⭐⭐⭐" 
   local start_time=$(date +%s.%N)
-  wget -O- https://ftp.gnu.org/gnu/libiconv/libiconv-1.18.tar.gz | tar xz || exit 1
+  wget -O- https://mirrors.kernel.org/gnu/libiconv/libiconv-1.18.tar.gz | tar xz || exit 1
   cd libiconv-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-nls --disable-silent-rules --prefix=$INSTALLDIR || exit 1
   make -j$(nproc) || exit 1
@@ -155,7 +53,7 @@ build_libiconv() {
 build_libunistring() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libunistring⭐⭐⭐⭐⭐⭐" 
   local start_time=$(date +%s.%N)
-  wget -O- https://ftp.gnu.org/gnu/libunistring/libunistring-1.4.tar.gz | tar xz || exit 1
+  wget -O- https://mirrors.kernel.org/gnu/libunistring/libunistring-1.4.tar.gz | tar xz || exit 1
   cd libunistring-* || exit 1
   ./configure CFLAGS="-Os" --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static --disable-doc --disable-silent-rules || exit 1
   make -j$(nproc) || exit 1
@@ -169,7 +67,7 @@ build_libunistring() {
 build_libidn2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libidn2⭐⭐⭐⭐⭐⭐" 
   local start_time=$(date +%s.%N)
-  wget -O- https://ftp.gnu.org/gnu/libidn/libidn2-2.3.8.tar.gz | tar xz || exit 1
+  wget -O- https://mirrors.kernel.org/gnu/libidn/libidn2-2.3.8.tar.gz | tar xz || exit 1
   cd libidn2-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX  --disable-shared --enable-static --disable-doc --disable-gcc-warnings --prefix=$INSTALLDIR || exit 1
   make -j$(nproc) || exit 1
@@ -183,7 +81,7 @@ build_libidn2() {
 build_libtasn1() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libtasn1⭐⭐⭐⭐⭐⭐"
   local start_time=$(date +%s.%N)
-  wget -O- https://ftp.gnu.org/gnu/libtasn1/libtasn1-4.20.0.tar.gz | tar xz || exit 1
+  wget -O- https://mirrors.kernel.org/gnu/libtasn1/libtasn1-4.20.0.tar.gz | tar xz || exit 1
   cd libtasn1-* || exit 1
   ./configure --host=$PREFIX --disable-shared --disable-doc --prefix="$INSTALLDIR" || exit 1
   make -j$(nproc) || exit 1
@@ -194,20 +92,6 @@ build_libtasn1() {
   echo "$duration" > "$INSTALLDIR/libtasn1_duration.txt"
 }
 
-build_PCRE2() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build PCRE2⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
-  git clone --depth=1 https://github.com/PCRE2Project/pcre2 || exit 1
-  cd pcre2 || exit 1
-  ./autogen.sh || exit 1
-  ./configure --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static || exit 1
-  make -j$(nproc) || exit 1
-  make install || exit 1
-  cd .. && rm -rf pcre2
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/pcre2_duration.txt"
-}
 
 build_nghttp2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build nghttp2⭐⭐⭐⭐⭐⭐" 
@@ -223,25 +107,10 @@ build_nghttp2() {
   echo "$duration" > "$INSTALLDIR/nghttp2_duration.txt"
 }
 
-build_dlfcn-win32() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build dlfcn-win32⭐⭐⭐⭐⭐⭐" 
-  start_time=$(date +%s.%N)
-  git clone --depth=1 https://github.com/dlfcn-win32/dlfcn-win32.git || exit 1
-  cd dlfcn-win32 || exit 1
-  ./configure --prefix=$PREFIX --cc=$PREFIX-gcc || exit 1
-  make -j$(nproc) || exit 1
-  cp -p libdl.a $INSTALLDIR/lib/ || exit 1
-  cp -p src/dlfcn.h $INSTALLDIR/include/ || exit 1
-  cd .. && rm -rf dlfcn-win32
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/dlfcn-win32_duration.txt"
-}
-
 build_libmicrohttpd() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libmicrohttpd⭐⭐⭐⭐⭐⭐" 
   local start_time=$(date +%s.%N)
-  wget -O- https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-latest.tar.gz | tar xz || exit 1
+  wget -O- https://mirrors.kernel.org/gnu/libmicrohttpd/libmicrohttpd-latest.tar.gz | tar xz || exit 1
   cd libmicrohttpd-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static \
             --disable-examples --disable-doc --disable-tools --disable-silent-rules || exit 1
@@ -272,7 +141,7 @@ build_nettle() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build nettle⭐⭐⭐⭐⭐⭐" 
   local start_time=$(date +%s.%N)
   #git clone  https://github.com/sailfishos-mirror/nettle.git || exit 1
-  wget -O- https://ftp.gnu.org/gnu/nettle/nettle-3.10.2.tar.gz | tar xz || exit 1
+  wget -O- https://mirrors.kernel.org/gnu/nettle/nettle-3.10.2.tar.gz | tar xz || exit 1
   cd nettle-* || exit 1
   bash .bootstrap || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-documentation --prefix=$INSTALLDIR --libdir=$INSTALLDIR/lib || exit 1
