@@ -177,35 +177,6 @@ build_gnutls() {
   echo "$duration" > "$INSTALLDIR/gnutls_duration.txt"
 }
 
-build_wget2() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build wget2⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
-  git clone --depth=1 https://github.com/rockdaboot/wget2.git || exit 1
-  cd wget2 || exit 1
-  if [ -d "gnulib" ]; then
-      rm -rf gnulib
-  fi
-  git clone --depth=1 https://github.com/coreutils/gnulib.git
-  ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
-  export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
-  export CFLAGS="-L$INSTALLDIR/include -DNGHTTP2_STATICLIB $CFLAGS"
-  #LIBS="-lbrotlienc -lbrotlicommon" \
-  GNUTLS_CFLAGS=$CFLAGS \
-  GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lbcrypt -lncrypt" \
-  LIBPSL_CFLAGS=$CFLAGS \
-  LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl" \
-  LIBPCRE2_CFLAGS=$CFLAGS \
-  LIBPCRE2_LIBS="-L$INSTALLDIR/lib -lpcre2-8"  \
-  ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --with-libiconv-prefix="$INSTALLDIR" --with-ssl=gnutls --disable-shared --enable-static --without-lzma  --with-zstd --without-bzip2 --without-lzip --without-gpgme --enable-threads=windows || exit 1
-  make -j$(nproc)  || exit 1
-  strip $INSTALLDIR/wget2/src/wget2.exe || exit 1
-  cp -fv "$INSTALLDIR/wget2/src/wget2.exe" "${GITHUB_WORKSPACE}" || exit 1
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/wget2_duration.txt"
-}
-
-
 build_gmp
 wait
 build_libunistring &
