@@ -32,7 +32,7 @@ cd "$HOME/deps"
 
 rm -f wget2-deps.tar.zst
 curl -L -o wget2-deps.tar.zst \
-  https://github.com/wget2-new/releases/download/deps/wget2-deps.tar.zst
+  https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
 
 # ================== 解压依赖 ==================
 echo ">>> 解压 wget2-deps.tar.zst 到 $HOME/usr/local"
