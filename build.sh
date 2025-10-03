@@ -19,27 +19,26 @@ ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
 # 当前路径是：/__w/wget2-windows/wget2-windows
 # INSTALLDIR是：/github/home/usr/local/x86_64-w64-mingw32
 
-
-# ================== 清理旧依赖 ==================
-echo ">>> 删除旧依赖目录: $INSTALLDIR"
-rm -rf "$INSTALLDIR"
-mkdir -p "$HOME/usr/local"
-
-# ================== 下载预编译依赖 ==================
-echo ">>> 下载 wget2-deps.tar.zst"
-mkdir -p "$HOME/deps"
-cd "$HOME/deps"
-
-rm -f wget2-deps.tar.zst
-curl -L -o wget2-deps.tar.zst \
-  https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
-
-# ================== 解压依赖 ==================
-echo ">>> 解压 wget2-deps.tar.zst 到 $HOME/usr/local"
-tar -I zstd -xf wget2-deps.tar.zst -C "$HOME/usr/local"
-
-echo ">>> 依赖解压完成，校验目录："
-ls -lh "$INSTALLDIR/lib" | head -n 30
+download_deps() { 
+  # ================== 下载预编译依赖 ==================
+  echo ">>> 下载 wget2-deps.tar.zst"
+  mkdir -p "$HOME/deps"
+  cd "$HOME/deps"
+  
+  rm -f wget2-deps.tar.zst
+  curl -L -o wget2-deps.tar.zst \
+    https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
+  
+  # ================== 解压依赖 ==================
+  echo ">>> 解压 wget2-deps.tar.zst 到 $HOME/usr/local"
+  tar -I zstd -xf wget2-deps.tar.zst -C "$HOME/usr/local"
+  
+  echo ">>> 依赖解压完成，校验目录："
+  ls -lh "$INSTALLDIR/lib" | head -n 30
+  
+  # ================== 回到 $INSTALLDIR ==================
+  cd "$INSTALLDIR" || { echo "❌ $INSTALLDIR 不存在"; exit 1; }
+}
 
 mkdir -p $INSTALLDIR
 cd $INSTALLDIR
@@ -204,7 +203,8 @@ build_wget2() {
 }
 
 build_brotli
-build_zstd 
+build_zstd
+download_deps
 build_zlib-ng
 build_PCRE2
 build_libpsl
