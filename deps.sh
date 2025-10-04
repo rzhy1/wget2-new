@@ -147,7 +147,7 @@ build_nettle() {
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-documentation --prefix=$INSTALLDIR --libdir=$INSTALLDIR/lib || exit 1
   make -j$(nproc) || exit 1
   make install || exit 1
-  cd .. && rm -rf nettle
+  cd .. && rm -rf nettle-*
   local end_time=$(date +%s.%N)
   local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
   echo "$duration" > "$INSTALLDIR/nettle_duration.txt"
@@ -194,7 +194,7 @@ build_gnutls
 cd "$HOME/usr/local"
 
 echo ">>> 开始打包依赖：wget2-deps.tar.zst"
-tar -I zstd -cf wget2-deps.tar.zst "$PREFIX"
+tar -I zstd -cf wget2-deps.tar.zst -C "$PREFIX" include lib pkgconfig
 
 # 复制到工作目录，供 GitHub Actions 上传
 cp -fv wget2-deps.tar.zst "${GITHUB_WORKSPACE}/" || exit 1
