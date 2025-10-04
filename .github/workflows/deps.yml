@@ -18,17 +18,13 @@ jobs:
         run: |
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-          apt-get install -y --no-install-recommends  \
-            autopoint \
-            cmake \
-            gettext \
-            gperf \
-            lzip \
-            mingw-w64 \
-            ninja-build \
-            pkg-config-mingw-w64-x86-64 \
-            git curl ca-certificates gnupg wget build-essential autoconf automake libtool python3 meson python3-pip python3-venv flex texinfo jq \
-            retry bc lld zstd
+          apt-get install -y --no-install-recommends \
+            build-essential \
+            wget curl git ca-certificates bash \
+            autoconf automake libtool gettext texinfo \
+            mingw-w64 pkg-config-mingw-w64-x86-64 \
+            bc lld zstd
+
       - name: Compile
         env:
           CROSS_HOST: "x86_64-w64-mingw32"
