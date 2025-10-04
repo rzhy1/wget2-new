@@ -33,9 +33,10 @@ download_deps() {
   mkdir -p "$HOME/usr/local"  
   
   if command -v zstd >/dev/null 2>&1; then
-    tar -I zstd -xf wget2-deps.tar.zst -C "$HOME/usr/local"
+    tar -I zstd -xf wget2-deps.tar.zst -C "$HOME/usr/local/$PREFIX"
+
   else
-    unzstd -c wget2-deps.tar.zst | tar -xf - -C "$HOME/usr/local"
+    unzstd -c wget2-deps.tar.zst | tar -xf - -C "$HOME/usr/local/$PREFIX"
   fi
 
   echo ">>> 依赖解压完成，校验目录："
