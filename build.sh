@@ -29,8 +29,8 @@ download_deps() {
     https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
 
   # ================== 解压依赖 ==================
-  echo ">>> 解压 wget2-deps.tar.zst 到 $HOME/usr/local"
-  mkdir -p "$HOME/usr/local"  
+  echo ">>> 解压 wget2-deps.tar.zst 到 $HOME/usr/local/$PREFIX"
+  mkdir -p "$HOME/usr/local/$PREFIX"  
   
   if command -v zstd >/dev/null 2>&1; then
     tar -I zstd -xf wget2-deps.tar.zst -C "$HOME/usr/local/$PREFIX"
