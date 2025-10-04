@@ -25,7 +25,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             build-essential \
             wget curl git ca-certificates bash \
-            autopoint autoconf automake libtool gettext texinfo \
+            autopoint autoconf automake libtool gettext texinfo flex lzip \
             mingw-w64 pkg-config-mingw-w64-x86-64 \
             python3 meson ninja-build cmake \
             bc lld zstd
