@@ -195,7 +195,10 @@ build_wget2() {
   LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl" \
   LIBPCRE2_CFLAGS=$CFLAGS \
   LIBPCRE2_LIBS="-L$INSTALLDIR/lib -lpcre2-8"  \
-  ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --with-libiconv-prefix="$INSTALLDIR" \
+  ./configure \
+    --build=x86_64-pc-linux-gnu \
+    --host=$PREFIX \
+    --with-libiconv-prefix="$INSTALLDIR" \
     --with-ssl=gnutls \
     --disable-shared \
     --enable-static \
@@ -204,10 +207,10 @@ build_wget2() {
     --disable-code-coverage \
     --disable-manywarnings \
     --disable-fuzzing \
-    --disable-fsanitize-ubsan \
-    --disable-fsanitize-asan \
-    --disable-fsanitize-msan \
-    --disable-fsanitize-tsan \
+    --enable-fsanitize-ubsan=no \
+    --enable-fsanitize-asan=no \
+    --enable-fsanitize-msan=no \
+    --enable-fsanitize-tsan=no \
     --disable-assert \
     --disable-valgrind-tests \
     --enable-year2038 \
@@ -217,10 +220,10 @@ build_wget2() {
     --with-zlib \
     --with-lzip \
     --with-libidn2 \
-    --without-lzma  \
+    --without-lzma \
     --with-zstd \
     --without-bzip2 \
-    --enable-threads=windows || exit 1
+    --enable-threads=windows
   make -j$(nproc)  || exit 1
   strip $INSTALLDIR/wget2/src/wget2.exe || exit 1
   cp -fv "$INSTALLDIR/wget2/src/wget2.exe" "${GITHUB_WORKSPACE}" || exit 1
