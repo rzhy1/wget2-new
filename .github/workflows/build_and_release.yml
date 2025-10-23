@@ -27,7 +27,7 @@ jobs:
             wget curl git ca-certificates bash \
             autopoint autoconf automake libtool gettext texinfo flex lzip \
             mingw-w64 pkg-config-mingw-w64-x86-64 \
-            python3 meson ninja-build cmake \
+            python3-venv meson ninja-build cmake \
             bc lld zstd
       - name: Compile
         env:
