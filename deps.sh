@@ -75,7 +75,7 @@ build_gpgme() {
   (
       wget -q -O- https://gnupg.org/ftp/gcrypt/gpgme/gpgme-2.0.1.tar.bz2 | tar xj
       cd gpgme-* || exit
-      env PYTHON=/usr/bin/python3.12 ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR" --enable-static --with-libgpg-error-prefix="$INSTALLDIR" --disable-gpg-test --disable-g13-test --disable-gpgsm-test --disable-gpgconf-test --disable-glibtest --with-libassuan-prefix="$INSTALL_PATH"
+      env PYTHON=/usr/bin/python3.12 ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR" --enable-static --with-libgpg-error-prefix="$INSTALLDIR" --disable-gpg-test --disable-g13-test --disable-gpgsm-test --disable-gpgconf-test --disable-glibtest --with-libassuan-prefix="$INSTALLDIR"
       make -j$(nproc) && make install
   )
 }
