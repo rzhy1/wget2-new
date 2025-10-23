@@ -50,6 +50,36 @@ build_libiconv() {
   echo "$duration" > "$INSTALLDIR/libiconv_duration.txt"
 }
 
+build_gpg_error() {
+  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gpg-error⭐⭐⭐⭐⭐⭐"
+  (
+     wget -q -O- https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.56.tar.gz | tar xz
+     cd libgpg-error-* || exit
+     ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR" --enable-static --disable-doc
+     make -j$(nproc) && make install
+  )
+}
+
+build_libassuan() {
+  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libassuan⭐⭐⭐⭐⭐⭐"
+  (
+      wget -q -O- https://gnupg.org/ftp/gcrypt/libassuan/libassuan-3.0.2.tar.bz2 | tar xj
+      cd libassuan-* || exit
+      ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR" --enable-static --disable-doc --with-libgpg-error-prefix="$INSTALLDIR"
+      make -j$(nproc) && make install
+  )
+}
+
+build_gpgme() {
+  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gpgme⭐⭐⭐⭐⭐⭐"
+  (
+      wget -q -O- https://gnupg.org/ftp/gcrypt/gpgme/gpgme-2.0.1.tar.bz2 | tar xj
+      cd gpgme-* || exit
+      env PYTHON=/usr/bin/python3.12 ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR" --enable-static --with-libgpg-error-prefix="$INSTALLDIR" --disable-gpg-test --disable-g13-test --disable-gpgsm-test --disable-gpgconf-test --disable-glibtest --with-libassuan-prefix="$INSTALL_PATH"
+      make -j$(nproc) && make install
+  )
+}
+
 build_libunistring() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libunistring⭐⭐⭐⭐⭐⭐" 
   local start_time=$(date +%s.%N)
@@ -178,6 +208,9 @@ build_gnutls() {
 }
 
 build_gmp
+build_gpg_error
+build_libassuan
+build_gpgme
 wait
 build_libunistring &
 build_libtasn1 &
