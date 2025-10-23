@@ -180,7 +180,7 @@ build_libpsl() {
 build_wget2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build wget2⭐⭐⭐⭐⭐⭐" 
   local start_time=$(date +%s.%N)
-  git clone --depth=1 https://github.com/rockdaboot/wget2.git || exit 1
+  git clone https://gitlab.com/gnuwget/wget2.git || exit 1
   cd wget2 || exit 1
   if [ -d "gnulib" ]; then
       rm -rf gnulib
