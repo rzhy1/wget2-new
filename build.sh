@@ -190,7 +190,7 @@ build_wget2() {
   export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
   export CPPFLAGS="-I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
   GNUTLS_CFLAGS=$CFLAGS \
-  GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lbcrypt -lncrypt" \
+  GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lbcrypt -lncrypt" \
   LIBPSL_CFLAGS=$CFLAGS \
   LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl" \
   LIBPCRE2_CFLAGS=$CFLAGS \
@@ -205,12 +205,8 @@ build_wget2() {
     --disable-nls \
     --disable-doc \
     --enable-year2038 \
-    --with-libhsts \
-    --with-libnghttp2 \
-    --with-gpgme \
     --with-zlib \
     --with-lzip \
-    --with-libidn2 \
     --without-lzma \
     --with-zstd \
     --without-bzip2 \
