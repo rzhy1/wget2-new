@@ -8,7 +8,7 @@ on:
       - '.github/workflows/deps.yml'
       - 'deps.sh'
 jobs:
-  build_wget2:
+  build_wget2_deps:
     runs-on: ubuntu-24.04
     container: ubuntu:devel
     steps:
