@@ -21,7 +21,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             build-essential \
             wget curl git ca-certificates bash \
-            autopoint autoconf automake libtool gettext texinfo \
+            autoconf-archive autopoint autoconf automake libtool gettext texinfo \
             mingw-w64 pkg-config-mingw-w64-x86-64 \
             bc lld zstd
 
