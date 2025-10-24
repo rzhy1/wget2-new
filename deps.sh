@@ -168,9 +168,9 @@ build_libpsl() {
 
 build_libhsts() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libhsts⭐⭐⭐⭐⭐⭐" 
-  git clone https://gitlab.com/rockdaboot/libhsts.git
-  cd libhsts
-  autoreconf -fi
+  git clone https://gitlab.com/rockdaboot/libhsts || exit 1
+  cd libhsts  || exit 1
+  autoreconf -fi  || exit 1
   ./configure \
       --host=$PREFIX \
       --prefix=$INSTALLDIR \
@@ -231,6 +231,7 @@ build_libtasn1 &
 build_libpsl &
 wait
 build_libhsts  &
+wait
 build_libiconv &
 build_libidn2 &
 wait
