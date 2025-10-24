@@ -167,6 +167,21 @@ build_libpsl() {
   echo "$duration" > "$INSTALLDIR/libpsl_duration.txt"
 }
 
+build_libhsts() {
+  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libhsts⭐⭐⭐⭐⭐⭐" 
+  git clone https://gitlab.com/rockdaboot/libhsts.git
+  cd libhsts
+  autoreconf -fi
+  ./configure \
+      --host=${CROSS_HOST} \
+      --prefix=${PREFIX} \
+      --enable-static \
+      --disable-shared
+  make -j$(nproc)
+  make install
+  cd .. && rm -rf libhsts
+}
+
 build_nettle() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build nettle⭐⭐⭐⭐⭐⭐" 
   local start_time=$(date +%s.%N)
@@ -215,6 +230,7 @@ wait
 build_libunistring &
 build_libtasn1 &
 wait
+build_libhsts  &
 build_libiconv &
 build_libidn2 &
 wait
