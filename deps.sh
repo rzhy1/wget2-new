@@ -172,8 +172,8 @@ build_libhsts() {
   cd libhsts
   autoreconf -fi
   ./configure \
-      --host=${CROSS_HOST} \
-      --prefix=${PREFIX} \
+      --host=$PREFIX \
+      --prefix=$INSTALLDIR \
       --enable-static \
       --disable-shared
   make -j$(nproc)
