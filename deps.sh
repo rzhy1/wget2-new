@@ -155,13 +155,12 @@ build_libmicrohttpd() {
 build_libpsl() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libpsl⭐⭐⭐⭐⭐⭐" 
   local start_time=$(date +%s.%N)
-  git clone --depth=1 --recursive https://github.com/rockdaboot/libpsl.git || exit 1
-  cd libpsl || exit 1
-  ./autogen.sh || exit 1
-  ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --enable-runtime=libidn2 --enable-builtin --prefix=$INSTALLDIR || exit 1
+  wget -q -O- https://github.com/rockdaboot/libpsl/releases/download/0.21.5/libpsl-0.21.5.tar.gz | tar xz
+  cd libpsl-* || exit 1
+  ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --enable-runtime=libidn2 --enable-builtin --prefix=$INSTALLDIR || exit 1      
   make -j$(nproc) || exit 1
   make install || exit 1
-  cd .. && rm -rf libpsl
+  cd .. && rm -rf libpsl-*
   local end_time=$(date +%s.%N)
   local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
   echo "$duration" > "$INSTALLDIR/libpsl_duration.txt"
@@ -229,6 +228,7 @@ build_gpgme
 wait
 build_libunistring &
 build_libtasn1 &
+build_libpsl &
 wait
 build_libhsts  &
 build_libiconv &
