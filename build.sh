@@ -223,5 +223,4 @@ build_brotli
 build_zstd
 build_zlib-ng
 build_PCRE2
-build_libpsl
 build_wget2
