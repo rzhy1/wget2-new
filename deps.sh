@@ -182,25 +182,35 @@ build_gnutls() {
   cd .. && rm -rf gnutls-* 
 }
 
-build_gmp
-build_gpg_error
-build_libassuan
-build_gpgme
-wait
-build_libunistring &
-build_libtasn1 &
-wait
-build_libhsts  &
-wait
+echo "=== 第一阶段：基础库 ==="
+build_gmp &
 build_libiconv &
-build_libidn2 &
+build_libunistring &
 wait
+
+echo "=== 第二阶段：加密基础 ==="
+build_gpg_error &
+build_libtasn1 &
+build_nettle &
+wait
+
+echo "=== 第三阶段：网络库 ==="
+build_libidn2 &
+build_libhsts &
 build_nghttp2 &
 build_libmicrohttpd &
 wait
-build_libpsl
-build_nettle 
-build_gnutls 
+
+echo "=== 第四阶段：GPG 组件 ==="
+build_libassuan &
+wait
+build_gpgme &
+wait
+
+echo "=== 第五阶段：最终组件 ==="
+build_libpsl &    # 需要 libidn2
+build_gnutls &    # 需要 nettle, libtasn1, gmp
+wait
 
 cd "$HOME/usr/local"
 
