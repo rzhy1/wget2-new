@@ -169,6 +169,7 @@ build_libpsl() {
 build_libhsts() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libhsts⭐⭐⭐⭐⭐⭐" 
   git clone https://gitlab.com/rockdaboot/libhsts || exit 1
+  sudo ln -sf /usr/bin/python3 /usr/bin/python
   cd libhsts  || exit 1
   autoreconf -fi  || exit 1
   ./configure \
