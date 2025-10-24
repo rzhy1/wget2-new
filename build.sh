@@ -48,7 +48,6 @@ download_deps() {
 
 build_brotli() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build brotli⭐⭐⭐⭐⭐⭐"
-  local start_time=$(date +%s.%N)
   git clone --depth=1 https://github.com/google/brotli.git || exit 1
   cd brotli || exit 1
   mkdir build && cd build
@@ -62,9 +61,6 @@ build_brotli() {
   make -j$(nproc) install || exit 1
   sed -i 's/^Libs: .*/& -lbrotlicommon/' "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
   cd ../.. && rm -rf brotli
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/brotli_duration.txt"
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommo结果如下⭐⭐⭐⭐⭐⭐" 
   pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
   echo "显示libbrotlidec.pc内容"
@@ -73,7 +69,6 @@ build_brotli() {
 
 build_xz() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build xz⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   apt-get purge xz-utils
   git clone --depth=1 https://github.com/tukaani-project/xz.git || { echo "Git clone failed"; exit 1; }
   cd xz || { echo "cd xz failed"; exit 1; }
@@ -84,14 +79,10 @@ build_xz() {
   cmake --install . || { echo "Install failed"; exit 1; }
   xz --version
   cd ../.. && rm -rf xz
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/xz_duration.txt"
 }
 
 build_zstd() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build zstd⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   # 创建 Python 虚拟环境并安装meson
   rm -rf /tmp/venv
   python3 -m venv /tmp/venv
@@ -118,38 +109,26 @@ build_zstd() {
   meson compile -C builddir-st || exit 1
   meson install -C builddir-st || exit 1
   cd .. && rm -rf zstd
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/zstd_duration.txt"
 }
 
 build_zlib-ng() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build zlib-ng⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   git clone --depth=1 https://github.com/zlib-ng/zlib-ng || exit 1
   cd zlib-ng || exit 1
   CROSS_PREFIX="x86_64-w64-mingw32-" ARCH="x86_64" CFLAGS="-Os" CC=x86_64-w64-mingw32-gcc ./configure --prefix=$INSTALLDIR --static --64 --zlib-compat || exit 1
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf zlib-ng
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/zlib-ng_duration.txt"
 }
 
 build_gnulibmirror() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnulib-mirror⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   git clone --recursive --depth=1 https://gitlab.com/gnuwget/gnulib-mirror.git gnulib || exit 1
   export GNULIB_REFDIR=$INSTALLDIR/gnulib
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/gnulibmirror_duration.txt"
 }
 
 build_PCRE2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build PCRE2⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   git clone --depth=1 https://github.com/PCRE2Project/pcre2 || exit 1
   cd pcre2 || exit 1
   ./autogen.sh || exit 1
@@ -157,14 +136,10 @@ build_PCRE2() {
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf pcre2
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/pcre2_duration.txt"
 }
 
 build_libpsl() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libpsl⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   git clone --depth=1 --recursive https://github.com/rockdaboot/libpsl.git || exit 1
   cd libpsl || exit 1
   ./autogen.sh || exit 1
@@ -172,14 +147,10 @@ build_libpsl() {
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf libpsl
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/libpsl_duration.txt"
 }
 
 build_wget2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build wget2⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   git clone https://gitlab.com/gnuwget/wget2.git || exit 1
   cd wget2 || exit 1
   if [ -d "gnulib" ]; then
@@ -214,14 +185,10 @@ build_wget2() {
   make -j$(nproc)  || exit 1
   strip $INSTALLDIR/wget2/src/wget2.exe || exit 1
   cp -fv "$INSTALLDIR/wget2/src/wget2.exe" "${GITHUB_WORKSPACE}" || exit 1
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/wget2_duration.txt"
 }
 download_deps
 build_brotli
 build_zstd
 build_zlib-ng
 build_PCRE2
-build_libpsl
 build_wget2
