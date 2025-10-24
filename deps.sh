@@ -24,30 +24,22 @@ cd $INSTALLDIR
 
 build_gmp() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gmp⭐⭐⭐⭐⭐⭐" 
-  start_time=$(date +%s.%N)
   wget -nv -O- https://mirrors.kernel.org/gnu/gmp/gmp-6.3.0.tar.xz | tar x --xz
   cd gmp-* || exit
   ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR"
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf gmp-*
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/gmp_duration.txt"
 }
 
 build_libiconv() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libiconv⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   wget -O- https://mirrors.kernel.org/gnu/libiconv/libiconv-1.18.tar.gz | tar xz || exit 1
   cd libiconv-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-nls --disable-silent-rules --prefix=$INSTALLDIR || exit 1
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf libiconv-*
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/libiconv_duration.txt"
 }
 
 build_gpg_error() {
@@ -82,64 +74,47 @@ build_gpgme() {
 
 build_libunistring() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libunistring⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   wget -O- https://mirrors.kernel.org/gnu/libunistring/libunistring-1.4.1.tar.gz | tar xz || exit 1
   cd libunistring-* || exit 1
   ./configure CFLAGS="-Os" --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static --disable-doc --disable-silent-rules || exit 1
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf libunistring-*
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/libunistring_duration.txt"
 }
 
 build_libidn2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libidn2⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   wget -O- https://mirrors.kernel.org/gnu/libidn/libidn2-2.3.8.tar.gz | tar xz || exit 1
   cd libidn2-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX  --disable-shared --enable-static --disable-doc --disable-gcc-warnings --prefix=$INSTALLDIR || exit 1
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf libidn2-*
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/libidn2_duration.txt"
 }
 
 build_libtasn1() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libtasn1⭐⭐⭐⭐⭐⭐"
-  local start_time=$(date +%s.%N)
   wget -O- https://mirrors.kernel.org/gnu/libtasn1/libtasn1-4.20.0.tar.gz | tar xz || exit 1
   cd libtasn1-* || exit 1
   ./configure --host=$PREFIX --disable-shared --disable-doc --prefix="$INSTALLDIR" || exit 1
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf libtasn1-*
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/libtasn1_duration.txt"
 }
 
 
 build_nghttp2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build nghttp2⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   wget -O- https://github.com/nghttp2/nghttp2/releases/download/v1.67.1/nghttp2-1.67.1.tar.gz | tar xz || exit 1
   cd nghttp2-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static --disable-examples --disable-app --disable-failmalloc --disable-hpack-tools || exit 1
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf nghttp2-*
-  local end_time=$(date +%s.%N)
-  duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/nghttp2_duration.txt"
 }
 
 build_libmicrohttpd() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libmicrohttpd⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   wget -O- https://mirrors.kernel.org/gnu/libmicrohttpd/libmicrohttpd-latest.tar.gz | tar xz || exit 1
   cd libmicrohttpd-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static \
@@ -147,29 +122,22 @@ build_libmicrohttpd() {
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf libmicrohttpd-*
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/libmicrohttpd_duration.txt"
 }
 
 build_libpsl() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libpsl⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   wget -q -O- https://github.com/rockdaboot/libpsl/releases/download/0.21.5/libpsl-0.21.5.tar.gz | tar xz  || exit 1
   cd libpsl-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --enable-runtime=libidn2 --enable-builtin --prefix=$INSTALLDIR || exit 1      
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf libpsl-*
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/libpsl_duration.txt"
 }
 
 build_libhsts() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libhsts⭐⭐⭐⭐⭐⭐" 
   git clone https://gitlab.com/rockdaboot/libhsts || exit 1
-  sudo ln -sf /usr/bin/python3 /usr/bin/python
+  ln -sf /usr/bin/python3 /usr/bin/python
   cd libhsts  || exit 1
   autoreconf -fi  || exit 1
   ./configure \
@@ -184,7 +152,6 @@ build_libhsts() {
 
 build_nettle() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build nettle⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   #git clone  https://github.com/sailfishos-mirror/nettle.git || exit 1
   wget -O- https://mirrors.kernel.org/gnu/nettle/nettle-3.10.2.tar.gz | tar xz || exit 1
   cd nettle-* || exit 1
@@ -193,14 +160,10 @@ build_nettle() {
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf nettle-*
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/nettle_duration.txt"
 }
 
 build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
-  local start_time=$(date +%s.%N)
   wget -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.10.tar.xz | tar x --xz || exit 1
   cd gnutls-* || exit 1
   GMP_LIBS="-L$INSTALLDIR/lib -lgmp" \
@@ -217,9 +180,6 @@ build_gnutls() {
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf gnutls-* 
-  local end_time=$(date +%s.%N)
-  local duration=$(echo "$end_time - $start_time" | bc | xargs printf "%.1f")
-  echo "$duration" > "$INSTALLDIR/gnutls_duration.txt"
 }
 
 build_gmp
@@ -230,8 +190,6 @@ wait
 build_libunistring &
 build_libtasn1 &
 wait
-build_libpsl &
-wait
 build_libhsts  &
 wait
 build_libiconv &
@@ -240,6 +198,7 @@ wait
 build_nghttp2 &
 build_libmicrohttpd &
 wait
+build_libpsl
 build_nettle 
 build_gnutls 
 
