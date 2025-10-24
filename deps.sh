@@ -155,7 +155,7 @@ build_libmicrohttpd() {
 build_libpsl() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libpsl⭐⭐⭐⭐⭐⭐" 
   local start_time=$(date +%s.%N)
-  wget -q -O- https://github.com/rockdaboot/libpsl/releases/download/0.21.5/libpsl-0.21.5.tar.gz | tar xz
+  wget -q -O- https://github.com/rockdaboot/libpsl/releases/download/0.21.5/libpsl-0.21.5.tar.gz | tar xz  || exit 1
   cd libpsl-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --enable-runtime=libidn2 --enable-builtin --prefix=$INSTALLDIR || exit 1      
   make -j$(nproc) || exit 1
@@ -229,7 +229,7 @@ build_gpgme
 wait
 build_libunistring &
 build_libtasn1 &
-#build_libpsl &
+build_libpsl &
 wait
 build_libhsts  &
 wait
