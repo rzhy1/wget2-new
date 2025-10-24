@@ -229,7 +229,7 @@ build_gpgme
 wait
 build_libunistring &
 build_libtasn1 &
-build_libpsl &
+#build_libpsl &
 wait
 build_libhsts  &
 wait
