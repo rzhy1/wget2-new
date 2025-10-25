@@ -1,4 +1,4 @@
-name: "Build and Release"
+name: "Build wget2.exe"
 
 on:
   workflow_dispatch:
