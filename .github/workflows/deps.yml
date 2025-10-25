@@ -32,7 +32,7 @@ jobs:
           chmod +x "${GITHUB_WORKSPACE}/deps.sh"
           "${GITHUB_WORKSPACE}/deps.sh"
       - name: Archive wget2-deps
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: wget2-deps.tar.zst
           path: "wget2-deps.tar.zst"
