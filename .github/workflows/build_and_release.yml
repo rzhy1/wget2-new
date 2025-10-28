@@ -146,17 +146,48 @@ jobs:
             fi
           fi
       
-      - name: Install prerequisites
+      - name: System optimizations for build speed
         run: |
-          sudo apt-get update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-          sudo apt-get install -y --no-install-recommends \
-            build-essential \
-            wget curl git ca-certificates bash \
+          echo "Applying system optimizations for faster builds..."
+          
+          # 1. 停止不必要的服务
+          sudo systemctl stop snapd unattended-upgrades apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+          sudo systemctl disable snapd unattended-upgrades apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+          
+          # 2. 配置 apt 优化
+          sudo tee /etc/apt/apt.conf.d/99build-speed > /dev/null <<EOF
+          Acquire::Languages "none";
+          APT::Install-Recommends "false";
+          APT::Install-Suggests "false";
+          Acquire::PDiffs "false";
+          Acquire::Retries "2";
+          APT::Get::List-Cleanup "true";
+          EOF
+          
+          # 3. 禁用 snap 自动刷新
+          if command -v snap >/dev/null 2>&1; then
+            sudo snap set system refresh.hold="2030-01-01T00:00:00Z" 2>/dev/null || true
+          fi
+          
+          echo "System optimizations completed"
+
+      - name: Install prerequisites (fast)
+        run: |
+          # 快速更新
+          sudo apt-get update -o Acquire::http::No-Cache=true
+          
+          # 批量安装，减少事务开销
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            build-essential wget curl git ca-certificates bash \
             autopoint autoconf automake libtool gettext texinfo flex lzip \
             mingw-w64 pkg-config-mingw-w64-x86-64 \
             python3-venv meson ninja-build cmake \
-            bc lld zstd
+            bc lld zstd \
+            libtool-bin nasm yasm
+          
+          # 立即清理
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
       
       - name: Compile
         env:
