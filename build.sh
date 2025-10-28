@@ -59,11 +59,13 @@ build_brotli() {
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_BUILD_TYPE=Release || exit 1
   make -j$(nproc) install || exit 1
+  echo "显示原版libbrotlidec.pc内容"
+  cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
   sed -i 's/^Libs: .*/& -lbrotlicommon/' "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
   cd ../.. && rm -rf brotli
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommo结果如下⭐⭐⭐⭐⭐⭐" 
   pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
-  echo "显示libbrotlidec.pc内容"
+  echo "显示新版libbrotlidec.pc内容"
   cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
 }
 
