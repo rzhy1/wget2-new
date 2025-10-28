@@ -13,25 +13,20 @@ on:
 jobs:
   build_wget2:
     runs-on: ubuntu-24.04
-    container: ubuntu:devel
     steps:
       - name: Checkout
         uses: actions/checkout@v5
       
       - name: Get Ubuntu codename
         run: |
-          # 获取容器内的 Ubuntu 版本代号
+          # 获取 Ubuntu 版本代号
           CODENAME=$(lsb_release -cs)
-          echo "Container Ubuntu codename: $CODENAME"
+          echo "Ubuntu codename: $CODENAME"
           echo "CODENAME=$CODENAME" >> $GITHUB_ENV
       
       - name: Find fastest apt mirror
         run: |
           echo "Testing mirror speeds for Ubuntu $CODENAME..."
-          
-          # 安装必要的工具
-          apt-get update
-          apt-get install -y curl
           
           # 动态生成镜像URL
           declare -A MIRROR_URLS=(
@@ -93,20 +88,20 @@ jobs:
         run: |
           echo "Configuring apt to use fastest mirror: $FASTEST_MIRROR"
           # 备份原配置
-          cp /etc/apt/sources.list /etc/apt/sources.list.backup
+          sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
           
           # 替换为最快镜像
-          sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
-          sed -i "s|http://security\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
+          sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
+          sudo sed -i "s|http://security\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
           
           echo "Updated apt sources:"
           grep "^deb " /etc/apt/sources.list
       
       - name: Install prerequisites
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
-          apt-get install -y --no-install-recommends \
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+          sudo apt-get install -y --no-install-recommends \
             build-essential \
             wget curl git ca-certificates bash \
             autopoint autoconf automake libtool gettext texinfo flex lzip \
@@ -129,8 +124,6 @@ jobs:
       
       - name: Get version number
         run: |
-          # 安装wget用于获取版本信息
-          apt-get install -y wget
           VERSION=$(wget -qO- https://raw.githubusercontent.com/rockdaboot/wget2/master/NEWS | grep -oP '\bRelease v\K[\d.]+' | head -n 1)
           echo "wget2_VERSION=${VERSION}" >> $GITHUB_ENV
       
