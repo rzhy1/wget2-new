@@ -16,6 +16,132 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+      
+      - name: Get Ubuntu codename
+        run: |
+          # 获取 Ubuntu 版本代号
+          CODENAME=$(lsb_release -cs)
+          echo "Ubuntu codename: $CODENAME"
+          echo "CODENAME=$CODENAME" >> $GITHUB_ENV
+      
+      - name: Find fastest apt mirror
+        run: |
+          echo "Testing mirror speeds for Ubuntu $CODENAME..."
+          
+          # 动态生成镜像URL
+          declare -A MIRROR_URLS=(
+            ["mirrors.mit.edu"]="http://mirrors.mit.edu/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirror.csclub.uwaterloo.ca"]="http://mirror.csclub.uwaterloo.ca/ubuntu/dists/$CODENAME/Release.gpg"
+            ["ubuntu.mirror.ac.za"]="http://ubuntu.mirror.ac.za/ubuntu/dists/$CODENAME/Release.gpg"
+            ["ubuntu.mirror.digitalpacific.com.au"]="http://ubuntu.mirror.digitalpacific.com.au/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirror.lagoon.nc"]="http://mirror.lagoon.nc/ubuntu/dists/$CODENAME/Release.gpg"
+            ["ubuntu.mirror.rafal.ca"]="http://ubuntu.mirror.rafal.ca/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirrors.coreix.net"]="http://mirrors.coreix.net/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirror.koddos.net"]="http://mirror.koddos.net/ubuntu/dists/$CODENAME/Release.gpg"
+            ["ftp.rrze.de"]="http://ftp.rrze.de/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirrors.dotsrc.org"]="http://mirrors.dotsrc.org/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirrors.tencent.com"]="http://mirrors.tencent.com/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirrors.aliyun.com"]="http://mirrors.aliyun.com/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirrors.tuna.tsinghua.edu.cn"]="http://mirrors.tuna.tsinghua.edu.cn/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirrors.ustc.edu.cn"]="http://mirrors.ustc.edu.cn/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirrors.huaweicloud.com"]="http://mirrors.huaweicloud.com/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirrors.bfsu.edu.cn"]="http://mirrors.bfsu.edu.cn/ubuntu/dists/$CODENAME/Release.gpg"
+            ["mirrors.sjtug.sjtu.edu.cn"]="http://mirrors.sjtug.sjtu.edu.cn/ubuntu/dists/$CODENAME/Release.gpg"
+          )
+          
+          FASTEST_MIRROR=""
+          FASTEST_TIME=999999
+          
+          for mirror in "${!MIRROR_URLS[@]}"; do
+            echo -n "Testing $mirror ... "
+            URL="${MIRROR_URLS[$mirror]}"
+            
+            # 使用timeout确保不会卡住
+            START_TIME=$(date +%s%3N)
+            if timeout 10s curl --connect-timeout 5 --silent --output /dev/null "$URL"; then
+              END_TIME=$(date +%s%3N)
+              TIME_MS=$((END_TIME - START_TIME))
+              echo "${TIME_MS}ms"
+              
+              if [ "$TIME_MS" -lt "$FASTEST_TIME" ]; then
+                FASTEST_MIRROR="$mirror"
+                FASTEST_TIME="$TIME_MS"
+              fi
+            else
+              echo "failed"
+            fi
+          done
+          
+          if [ -n "$FASTEST_MIRROR" ]; then
+            echo "Fastest mirror: $FASTEST_MIRROR (${FASTEST_TIME}ms)"
+            echo "FASTEST_MIRROR=$FASTEST_MIRROR" >> $GITHUB_ENV
+          else
+            echo "No working mirror found, using default"
+            echo "FASTEST_MIRROR=archive.ubuntu.com" >> $GITHUB_ENV
+          fi
+      
+      - name: Configure apt sources
+        run: |
+          echo "Configuring apt to use fastest mirror: $FASTEST_MIRROR"
+          
+          # 检查是否找到了有效的镜像
+          if [ -z "$FASTEST_MIRROR" ] || [ "$FASTEST_MIRROR" = "archive.ubuntu.com" ]; then
+            echo "Using default Ubuntu sources, no changes needed"
+            exit 0
+          fi
+          
+          # 检查是否存在 apt-mirrors.txt 文件
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            echo "Found apt-mirrors.txt, updating it with fastest mirror"
+            
+            # 备份原配置
+            sudo cp /etc/apt/apt-mirrors.txt /etc/apt/apt-mirrors.txt.backup
+            
+            # 检查当前镜像列表内容
+            echo "Current apt-mirrors.txt content:"
+            cat /etc/apt/apt-mirrors.txt
+            
+            # 将最快镜像添加到镜像列表（或替换现有内容）
+            echo "http://$FASTEST_MIRROR/ubuntu/" | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+            
+            echo "Updated apt-mirrors.txt:"
+            cat /etc/apt/apt-mirrors.txt
+          else
+            # Ubuntu 24.04 使用新的 deb822 格式，检查并更新正确的文件
+            if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+              echo "Ubuntu 24.04 detected, using deb822 format sources"
+              
+              # 备份原配置
+              sudo cp /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.backup
+              
+              # 检查当前源的内容
+              echo "Current ubuntu.sources content:"
+              head -n 20 /etc/apt/sources.list.d/ubuntu.sources
+              
+              # 替换主源，但保留安全源
+              sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list.d/ubuntu.sources
+              
+              echo "Updated apt sources:"
+              head -n 20 /etc/apt/sources.list.d/ubuntu.sources
+            else
+              # 传统格式的 sources.list
+              echo "Using traditional sources.list format"
+              
+              # 备份原配置
+              sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
+              
+              # 检查当前源的内容
+              echo "Current sources.list content:"
+              head -n 10 /etc/apt/sources.list
+              
+              # 替换主源，但保留安全源
+              sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
+              
+              echo "Updated apt sources:"
+              grep "^deb " /etc/apt/sources.list | head -n 5
+            fi
+          fi
+      
       - name: Install prerequisites
         run: |
           sudo apt-get update
