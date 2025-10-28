@@ -178,12 +178,9 @@ jobs:
           
           # 批量安装，减少事务开销
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            build-essential wget curl git ca-certificates bash \
-            autopoint autoconf automake libtool gettext texinfo flex lzip \
+            build-essential autopoint gettext lzip \
             mingw-w64 pkg-config-mingw-w64-x86-64 \
-            python3-venv meson ninja-build cmake \
-            bc lld zstd \
-            libtool-bin nasm yasm
+            meson ninja-build cmake lld
           
           # 立即清理
           sudo apt-get clean
