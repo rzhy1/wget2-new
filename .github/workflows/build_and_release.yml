@@ -43,7 +43,8 @@ jobs:
           	["mirrors.ustc.edu.cn"]="http://mirrors.ustc.edu.cn/ubuntu/dists/noble/Release.gpg"
           	["mirrors.huaweicloud.com"]="http://mirrors.huaweicloud.com/ubuntu/dists/noble/Release.gpg"
           	["mirrors.bfsu.edu.cn"]="http://mirrors.bfsu.edu.cn/ubuntu/dists/noble/Release.gpg"
-          	["mirrors.sjtug.sjtu.edu.cn"]="http://mirrors.sjtug.sjtu.edu.cn/ubuntu/dists/noble/Release.gpg")
+          	["mirrors.sjtug.sjtu.edu.cn"]="http://mirrors.sjtug.sjtu.edu.cn/ubuntu/dists/noble/Release.gpg"
+          )
           
           FASTEST_MIRROR=""
           FASTEST_TIME=999999
