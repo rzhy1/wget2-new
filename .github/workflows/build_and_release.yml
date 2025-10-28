@@ -31,7 +31,7 @@ jobs:
           # 动态生成镜像URL
           declare -A MIRROR_URLS=(
             ["archive.ubuntu.com"]="http://archive.ubuntu.com/ubuntu/dists/$CODENAME/Release.gpg"
-            ["azurearchive.ubuntu.com"]="http://azure.archive.ubuntu.com/ubuntu/dists/$CODENAME/Release.gpg"
+            ["azure.archive.ubuntu.com"]="http://azure.archive.ubuntu.com/ubuntu/dists/$CODENAME/Release.gpg"
             ["ports.ubuntu.com"]="http://ports.ubuntu.com/ubuntu-ports/dists/$CODENAME/Release.gpg"
             ["security.ubuntu.com"]="http://security.ubuntu.com/ubuntu/dists/$CODENAME-security/Release.gpg"
             ["mirrors.mit.edu"]="http://mirrors.mit.edu/ubuntu/dists/$CODENAME/Release.gpg"
