@@ -87,15 +87,27 @@ jobs:
       - name: Configure apt sources
         run: |
           echo "Configuring apt to use fastest mirror: $FASTEST_MIRROR"
+          
+          # 检查是否找到了有效的镜像
+          if [ -z "$FASTEST_MIRROR" ] || [ "$FASTEST_MIRROR" = "archive.ubuntu.com" ]; then
+            echo "Using default Ubuntu sources, no changes needed"
+            exit 0
+          fi
+          
           # 备份原配置
           sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
           
-          # 替换为最快镜像
+          # 检查当前源的内容
+          echo "Current sources.list content:"
+          head -n 10 /etc/apt/sources.list
+          
+          # 替换主源，但保留安全源
           sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
-          sudo sed -i "s|http://security\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
+          # 注意：不替换安全源，因为有些镜像可能没有安全更新
+          # sudo sed -i "s|http://security\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
           
           echo "Updated apt sources:"
-          grep "^deb " /etc/apt/sources.list
+          grep "^deb " /etc/apt/sources.list | head -n 5
       
       - name: Install prerequisites
         run: |
