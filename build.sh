@@ -15,22 +15,22 @@ export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -flto=$(nproc) -g0 -f
 export CXXFLAGS="$CFLAGS"
 export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
 export LD=x86_64-w64-mingw32-ld.lld
-sudo ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
+ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
 # 当前路径是：/__w/wget2-windows/wget2-windows
 # INSTALLDIR是：/github/home/usr/local/x86_64-w64-mingw32
 
 download_deps() { 
   echo ">>> 下载 wget2-deps.tar.zst"
-  sudo mkdir -p "$HOME/deps"
+  mkdir -p "$HOME/deps"
   cd "$HOME/deps"
 
-  sudo rm -f wget2-deps.tar.zst
-  sudo curl -L -o wget2-deps.tar.zst \
+  rm -f wget2-deps.tar.zst
+  curl -L -o wget2-deps.tar.zst \
     https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
 
   # ================== 解压依赖 ==================
   echo ">>> 解压 wget2-deps.tar.zst 到 $HOME/usr/local/$PREFIX"
-  sudo mkdir -p "$HOME/usr/local/$PREFIX"  
+  mkdir -p "$HOME/usr/local/$PREFIX"  
   
   if command -v zstd >/dev/null 2>&1; then
     tar -I zstd -xf wget2-deps.tar.zst -C "$HOME/usr/local/$PREFIX"
@@ -48,17 +48,17 @@ download_deps() {
 
 build_brotli() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build brotli⭐⭐⭐⭐⭐⭐"
-  sudo git clone --depth=1 https://github.com/google/brotli.git || exit 1
+  git clone --depth=1 https://github.com/google/brotli.git || exit 1
   cd brotli || exit 1
-  sudo mkdir build && cd build
-  sudo cmake .. \
+  mkdir build && cd build
+  cmake .. \
     -DCMAKE_SYSTEM_NAME=Windows \
     -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
     -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
     -DCMAKE_INSTALL_PREFIX=$INSTALLDIR \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_BUILD_TYPE=Release || exit 1
-  sudo make -j$(nproc) install || exit 1
+  make -j$(nproc) install || exit 1
   echo "显示原版libbrotlidec.pc内容"
   cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
   sed -i 's/^Libs: .*/& -lbrotlicommon/' "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
@@ -71,16 +71,16 @@ build_brotli() {
 
 build_xz() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build xz⭐⭐⭐⭐⭐⭐" 
-  sudo apt-get purge xz-utils
-  sudo git clone --depth=1 https://github.com/tukaani-project/xz.git || { echo "Git clone failed"; exit 1; }
+  apt-get purge xz-utils
+  git clone --depth=1 https://github.com/tukaani-project/xz.git || { echo "Git clone failed"; exit 1; }
   cd xz || { echo "cd xz failed"; exit 1; }
-  sudo mkdir build
+  mkdir build
   cd build
   cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release -DXZ_NLS=ON -DBUILD_SHARED_LIBS=OFF || { echo "CMake failed"; exit 1; }
   cmake --build . -- -j$(nproc) || { echo "Build failed"; exit 1; }
-  sudo cmake --install . || { echo "Install failed"; exit 1; }
+  cmake --install . || { echo "Install failed"; exit 1; }
   xz --version
-  cd ../.. && sudo rm -rf xz
+  cd ../.. && rm -rf xz
 }
 
 build_zstd() {
@@ -106,8 +106,8 @@ build_zstd() {
     -Ddefault_library=static \
     -Db_lto=true --optimization=2 \
     build/meson builddir-st || exit 1
-  sudo rm -f /usr/local/bin/zstd*
-  sudo rm -f /usr/local/bin/*zstd
+  rm -f /usr/local/bin/zstd*
+  rm -f /usr/local/bin/*zstd
   meson compile -C builddir-st || exit 1
   meson install -C builddir-st || exit 1
   cd .. && rm -rf zstd
@@ -190,9 +190,9 @@ build_wget2() {
 }
 download_deps
 wait
-build_brotli
-build_zstd
-build_zlib-ng
-build_PCRE2
+build_brotli &
+build_zstd &
+build_zlib-ng &
+build_PCRE2 &
 wait
 build_wget2
