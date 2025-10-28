@@ -51,7 +51,7 @@ build_brotli() {
   sudo git clone --depth=1 https://github.com/google/brotli.git || exit 1
   cd brotli || exit 1
   sudo mkdir build && cd build
-  cmake .. \
+  sudo cmake .. \
     -DCMAKE_SYSTEM_NAME=Windows \
     -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
     -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
