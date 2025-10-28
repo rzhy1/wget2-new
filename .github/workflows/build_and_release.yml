@@ -94,20 +94,39 @@ jobs:
             exit 0
           fi
           
-          # 备份原配置
-          sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
-          
-          # 检查当前源的内容
-          echo "Current sources.list content:"
-          head -n 10 /etc/apt/sources.list
-          
-          # 替换主源，但保留安全源
-          sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
-          # 注意：不替换安全源，因为有些镜像可能没有安全更新
-          # sudo sed -i "s|http://security\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
-          
-          echo "Updated apt sources:"
-          grep "^deb " /etc/apt/sources.list | head -n 5
+          # Ubuntu 24.04 使用新的 deb822 格式，检查并更新正确的文件
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            echo "Ubuntu 24.04 detected, using deb822 format sources"
+            
+            # 备份原配置
+            sudo cp /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.backup
+            
+            # 检查当前源的内容
+            echo "Current ubuntu.sources content:"
+            head -n 20 /etc/apt/sources.list.d/ubuntu.sources
+            
+            # 替换主源，但保留安全源
+            sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list.d/ubuntu.sources
+            
+            echo "Updated apt sources:"
+            head -n 20 /etc/apt/sources.list.d/ubuntu.sources
+          else
+            # 传统格式的 sources.list
+            echo "Using traditional sources.list format"
+            
+            # 备份原配置
+            sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
+            
+            # 检查当前源的内容
+            echo "Current sources.list content:"
+            head -n 10 /etc/apt/sources.list
+            
+            # 替换主源，但保留安全源
+            sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
+            
+            echo "Updated apt sources:"
+            grep "^deb " /etc/apt/sources.list | head -n 5
+          fi
       
       - name: Install prerequisites
         run: |
