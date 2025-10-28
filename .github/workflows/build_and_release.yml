@@ -31,6 +31,7 @@ jobs:
           # 动态生成镜像URL
           declare -A MIRROR_URLS=(
             ["archive.ubuntu.com"]="http://archive.ubuntu.com/ubuntu/dists/$CODENAME/Release.gpg"
+            ["azurearchive.ubuntu.com"]="http://azure.archive.ubuntu.com/ubuntu/dists/$CODENAME/Release.gpg"
             ["ports.ubuntu.com"]="http://ports.ubuntu.com/ubuntu-ports/dists/$CODENAME/Release.gpg"
             ["security.ubuntu.com"]="http://security.ubuntu.com/ubuntu/dists/$CODENAME-security/Release.gpg"
             ["mirrors.mit.edu"]="http://mirrors.mit.edu/ubuntu/dists/$CODENAME/Release.gpg"
@@ -94,38 +95,56 @@ jobs:
             exit 0
           fi
           
-          # Ubuntu 24.04 使用新的 deb822 格式，检查并更新正确的文件
-          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
-            echo "Ubuntu 24.04 detected, using deb822 format sources"
+          # 检查是否存在 apt-mirrors.txt 文件
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            echo "Found apt-mirrors.txt, updating it with fastest mirror"
             
             # 备份原配置
-            sudo cp /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.backup
+            sudo cp /etc/apt/apt-mirrors.txt /etc/apt/apt-mirrors.txt.backup
             
-            # 检查当前源的内容
-            echo "Current ubuntu.sources content:"
-            head -n 20 /etc/apt/sources.list.d/ubuntu.sources
+            # 检查当前镜像列表内容
+            echo "Current apt-mirrors.txt content:"
+            cat /etc/apt/apt-mirrors.txt
             
-            # 替换主源，但保留安全源
-            sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list.d/ubuntu.sources
+            # 将最快镜像添加到镜像列表（或替换现有内容）
+            echo "http://$FASTEST_MIRROR/ubuntu/" | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
             
-            echo "Updated apt sources:"
-            head -n 20 /etc/apt/sources.list.d/ubuntu.sources
+            echo "Updated apt-mirrors.txt:"
+            cat /etc/apt/apt-mirrors.txt
           else
-            # 传统格式的 sources.list
-            echo "Using traditional sources.list format"
-            
-            # 备份原配置
-            sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
-            
-            # 检查当前源的内容
-            echo "Current sources.list content:"
-            head -n 10 /etc/apt/sources.list
-            
-            # 替换主源，但保留安全源
-            sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
-            
-            echo "Updated apt sources:"
-            grep "^deb " /etc/apt/sources.list | head -n 5
+            # Ubuntu 24.04 使用新的 deb822 格式，检查并更新正确的文件
+            if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+              echo "Ubuntu 24.04 detected, using deb822 format sources"
+              
+              # 备份原配置
+              sudo cp /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list.d/ubuntu.sources.backup
+              
+              # 检查当前源的内容
+              echo "Current ubuntu.sources content:"
+              head -n 20 /etc/apt/sources.list.d/ubuntu.sources
+              
+              # 替换主源，但保留安全源
+              sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list.d/ubuntu.sources
+              
+              echo "Updated apt sources:"
+              head -n 20 /etc/apt/sources.list.d/ubuntu.sources
+            else
+              # 传统格式的 sources.list
+              echo "Using traditional sources.list format"
+              
+              # 备份原配置
+              sudo cp /etc/apt/sources.list /etc/apt/sources.list.backup
+              
+              # 检查当前源的内容
+              echo "Current sources.list content:"
+              head -n 10 /etc/apt/sources.list
+              
+              # 替换主源，但保留安全源
+              sudo sed -i "s|http://[a-z]*\.ubuntu\.com/ubuntu|http://$FASTEST_MIRROR/ubuntu|g" /etc/apt/sources.list
+              
+              echo "Updated apt sources:"
+              grep "^deb " /etc/apt/sources.list | head -n 5
+            fi
           fi
       
       - name: Install prerequisites
