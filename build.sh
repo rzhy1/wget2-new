@@ -21,16 +21,16 @@ sudo ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
 
 download_deps() { 
   echo ">>> 下载 wget2-deps.tar.zst"
-  mkdir -p "$HOME/deps"
+  sudo mkdir -p "$HOME/deps"
   cd "$HOME/deps"
 
-  rm -f wget2-deps.tar.zst
+  sudo rm -f wget2-deps.tar.zst
   curl -L -o wget2-deps.tar.zst \
     https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
 
   # ================== 解压依赖 ==================
   echo ">>> 解压 wget2-deps.tar.zst 到 $HOME/usr/local/$PREFIX"
-  mkdir -p "$HOME/usr/local/$PREFIX"  
+  sudo mkdir -p "$HOME/usr/local/$PREFIX"  
   
   if command -v zstd >/dev/null 2>&1; then
     tar -I zstd -xf wget2-deps.tar.zst -C "$HOME/usr/local/$PREFIX"
