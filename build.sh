@@ -25,7 +25,7 @@ download_deps() {
   cd "$HOME/deps"
 
   sudo rm -f wget2-deps.tar.zst
-  curl -L -o wget2-deps.tar.zst \
+  sudo curl -L -o wget2-deps.tar.zst \
     https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
 
   # ================== 解压依赖 ==================
