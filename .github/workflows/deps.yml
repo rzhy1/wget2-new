@@ -13,7 +13,7 @@ jobs:
     container: ubuntu:devel
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install prerequisites
         run: |
           apt-get update
