@@ -184,8 +184,7 @@ build_wget2() {
     --with-zstd \
     --without-bzip2 \
     --enable-threads=windows
-
-  sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#endif' tests/libtest.c
+  sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#include <pthread.h>\n#endif' tests/libtest.c
   sed -i 's/int flags = fcntl(client_fd, F_GETFL, 0);/#ifdef _WIN32\n\t\tunsigned long mode = 1;\n\t\tioctlsocket(client_fd, FIONBIO, \&mode);\n#else\n\t\tint flags = fcntl(client_fd, F_GETFL, 0);/' tests/libtest.c
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
   make -j$(nproc)  || exit 1
