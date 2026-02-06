@@ -76,8 +76,8 @@ build_libunistring() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libunistring⭐⭐⭐⭐⭐⭐" 
   wget -O- https://mirrors.kernel.org/gnu/libunistring/libunistring-1.4.1.tar.gz | tar xz || exit 1
   cd libunistring-* || exit 1
+  CFLAGS="$CFLAGS -DHAVE_NANOSLEEP=1 -DGNULIB_NANOSLEEP=0" \
   ./configure CFLAGS="-Os" --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static --disable-silent-rules --enable-threads=windows || exit 1
-  rm -rf tests
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf libunistring-*
