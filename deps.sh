@@ -2,6 +2,9 @@
 # wget2 deps
 # Author: rzhy1
 # 2025/10/3
+echo "显示版本"
+autopoint --version
+gettext --
 
 # 设置环境变量
 export PREFIX="x86_64-w64-mingw32"
