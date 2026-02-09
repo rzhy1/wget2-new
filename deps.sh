@@ -2,9 +2,6 @@
 # wget2 deps
 # Author: rzhy1
 # 2025/10/3
-echo "显示版本"
-autopoint --version
-gettext --
 
 # 设置环境变量
 export PREFIX="x86_64-w64-mingw32"
@@ -79,10 +76,9 @@ build_libunistring() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libunistring⭐⭐⭐⭐⭐⭐" 
   wget -O- https://mirrors.kernel.org/gnu/libunistring/libunistring-1.4.1.tar.gz | tar xz || exit 1
   cd libunistring-* || exit 1
-  ac_cv_func_nanosleep=yes \
-  ./configure CFLAGS="-Os" --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static --disable-silent-rules || exit 1
-  make -C lib -j$(nproc) || exit 1
-  make -C lib install || exit 1
+  ./configure CFLAGS="-Os" --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static --disable-doc --disable-silent-rules || exit 1
+  make -j$(nproc) || exit 1
+  make install || exit 1
   cd .. && rm -rf libunistring-*
 }
 
@@ -187,33 +183,33 @@ build_gnutls() {
 }
 
 echo "=== 第一阶段：基础库 ==="
-build_gmp
-build_libiconv
-build_libunistring
+build_gmp &
+build_libiconv &
+build_libunistring &
 wait
 
 echo "=== 第二阶段：加密基础 ==="
-build_gpg_error
-build_libtasn1
-build_nettle
+build_gpg_error &
+build_libtasn1 &
+build_nettle &
 wait
 
 echo "=== 第三阶段：网络库 ==="
-build_libidn2
-build_libhsts
-build_nghttp2
-build_libmicrohttpd
+build_libidn2 &
+build_libhsts &
+build_nghttp2 &
+build_libmicrohttpd &
 wait
 
 echo "=== 第四阶段：GPG 组件 ==="
-build_libassuan
+build_libassuan &
 wait
-build_gpgme
+build_gpgme &
 wait
 
 echo "=== 第五阶段：最终组件 ==="
-build_libpsl    # 需要 libidn2
-build_gnutls    # 需要 nettle, libtasn1, gmp
+build_libpsl &    # 需要 libidn2
+build_gnutls &    # 需要 nettle, libtasn1, gmp
 wait
 
 cd "$HOME/usr/local"
