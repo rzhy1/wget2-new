@@ -148,7 +148,7 @@ build_libhsts() {
   git clone https://gitlab.com/rockdaboot/libhsts || exit 1
   ln -sf /usr/bin/python3 /usr/bin/python
   cd libhsts  || exit 1
-  autoreconf -fi  || exit 1
+  NLS=no autoreconf -fi  || exit 1
   ./configure \
       --host=$PREFIX \
       --prefix=$INSTALLDIR \
@@ -193,6 +193,7 @@ build_gnutls() {
 }
 
 echo "=== 第一阶段：基础库 ==="
+build_libhsts
 build_gmp
 build_libiconv
 build_libunistring
