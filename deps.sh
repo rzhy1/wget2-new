@@ -145,6 +145,9 @@ build_libhsts() {
   git clone https://gitlab.com/rockdaboot/libhsts || exit 1
   ln -sf /usr/bin/python3 /usr/bin/python
   cd libhsts  || exit 1
+  rm -rf m4/gettext.m4 m4/intltool.m4 po/Makefile.in.in  || exit 1
+  rm -rf autom4te.cache  || exit 1
+  autopoint --force || exit 1
   autoreconf -fi  || exit 1
   ./configure \
       --host=$PREFIX \
