@@ -81,8 +81,8 @@ build_libunistring() {
   cd libunistring-* || exit 1
   ac_cv_func_nanosleep=yes \
   ./configure CFLAGS="-Os" --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static --disable-silent-rules || exit 1
-  make -j$(nproc) || exit 1
-  make install || exit 1
+  make -C lib -j$(nproc) || exit 1
+  make -C lib install || exit 1
   cd .. && rm -rf libunistring-*
 }
 
