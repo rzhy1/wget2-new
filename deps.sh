@@ -5,6 +5,11 @@
 echo "显示版本"
 autopoint --version
 gettext --
+echo "显示版本1"
+autopoint --print-archive
+ls /usr/share/gettext/
+ls /usr/share/aclocal/gettext.m4
+echo "显示版本2"
 
 # 设置环境变量
 export PREFIX="x86_64-w64-mingw32"
