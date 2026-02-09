@@ -3,12 +3,9 @@
 # Author: rzhy1
 # 2025/10/3
 echo "显示版本"
-autopoint --version
-gettext --
-echo "显示版本1"
-autopoint --print-archive
-ls /usr/share/gettext/
-ls /usr/share/aclocal/gettext.m4
+which autopoint
+type -a autopoint
+ls -l $(which autopoint)
 echo "显示版本2"
 
 # 设置环境变量
