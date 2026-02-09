@@ -145,7 +145,7 @@ build_libpsl() {
 
 build_libhsts() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libhsts⭐⭐⭐⭐⭐⭐" 
-  wget -q -O-https://gitlab.com/-/project/5701385/uploads/4753f61b5a3c6253acf4934217816e3f/libhsts-0.1.0.tar.gz | tar xz  || exit 1
+  wget -q -O- https://gitlab.com/-/project/5701385/uploads/4753f61b5a3c6253acf4934217816e3f/libhsts-0.1.0.tar.gz | tar xz  || exit 1
   ln -sf /usr/bin/python3 /usr/bin/python
   cd libhsts-*   || exit 1
   ./configure \
