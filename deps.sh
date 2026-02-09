@@ -2,14 +2,6 @@
 # wget2 deps
 # Author: rzhy1
 # 2025/10/3
-echo "显示版本"
-which autopoint
-type -a autopoint
-ls -l $(which autopoint)
-autopoint --print-archive
-ls /usr/share/gettext/
-ls /usr/share/aclocal/gettext.m4
-echo "显示版本2"
 
 # 设置环境变量
 export PREFIX="x86_64-w64-mingw32"
@@ -187,7 +179,7 @@ build_gnutls() {
   NETTLE_CFLAGS=$CFLAGS \
   HOGWEED_CFLAGS=$CFLAGS \
   LIBIDN2_CFLAGS=$CFLAGS \
-  ./configure CFLAGS="$CFLAGS" --host=$PREFIX --prefix=$INSTALLDIR --with-included-unistring --disable-openssl-compatibility --disable-hardware-acceleration --disable-shared --enable-static --without-p11-kit --disable-doc --disable-tests --disable-full-test-suite --disable-tools --disable-cxx --disable-maintainer-mode --disable-libdane || exit 1
+  ./configure CFLAGS="$CFLAGS" --host=$PREFIX --build=x86_64-pc-linux-gnu --prefix=$INSTALLDIR --with-included-unistring --disable-openssl-compatibility --disable-hardware-acceleration --disable-shared --enable-static --without-p11-kit --disable-doc --disable-tests --disable-full-test-suite --disable-tools --disable-cxx --disable-maintainer-mode --disable-libdane || exit 1
   make -C lib/gnutls -j$(nproc) || exit 1
   make -C lib/crypto -j$(nproc) || exit 1
   make  install || exit 1
