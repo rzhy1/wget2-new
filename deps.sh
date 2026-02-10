@@ -176,7 +176,14 @@ build_gnutls() {
   export LDFLAGS="-L$INSTALLDIR/lib -static -s -flto=$(nproc)"
   export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -flto=$(nproc) -g0 -fvisibility=hidden"
   export CPPFLAGS="-I$INSTALLDIR/include"
-  
+  if [ -f "src/gl/nanosleep.c" ]; then
+    sed -i '/^int nanosleep/,/^}$/{
+      /^int nanosleep/i \
+#if 0  // Disabled to avoid redefinition conflict with MinGW-w64
+      /^}$/a \
+#endif
+    }' src/gl/nanosleep.c
+  fi
   ./configure --host=$PREFIX \
     --prefix="$INSTALLDIR" \
     --with-included-unistring \
