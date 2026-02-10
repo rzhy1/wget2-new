@@ -165,23 +165,46 @@ build_nettle() {
 
 build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
-  if [ ! -f "$INSTALLDIR/lib/libgnutls.a" ]; then
-    wget -q https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-gnutls-3.8.12-1-any.pkg.tar.zst -O gnutls.zst
-    zstd -d gnutls.zst -o gnutls.tar
-    tar -xf gnutls.tar --strip-components=1 -C "$INSTALLDIR" mingw64
-    rm -f gnutls.zst gnutls.tar
-  fi
-  
-  # 验证安装
-  if [ -f "$INSTALLDIR/lib/libgnutls.a" ]; then
-    echo "✓ gnutls 安装成功"
-  else
-    echo "✗ gnutls 安装失败"
-  fi
+  wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz
+      cd gnutls-* || exit
+      localt CFLAGS="-march=tigerlake -mtune=tigerlake -O2 -pipe -ffunction-sections -fdata-sections -fuse-linker-plugin -fvisibility=hidden -fno-stack-protector -fomit-frame-pointer -DNDEBUG"
+      local CXXFLAGS="$CFLAGS"
+      local LDFLAGS_DEPS="-static -static-libgcc -Wl,--gc-sections -Wl,-S"
+      LDFLAGS="-L$INSTALLDIR/lib $LDFLAGS_DEPS" ./configure --host=$PREFIX  \
+        --prefix="$INSTALLDIR" \
+        --with-included-unistring \
+        --disable-nls \
+        --disable-shared \
+        --enable-static \
+        --disable-doc \
+        --disable-tools \
+        --disable-cxx \
+        --disable-tests \
+        --disable-maintainer-mode \
+        --disable-hardware-acceleration \
+        --disable-padlock \
+        --disable-ocsp \
+        --disable-dsa \
+        --disable-dhe \
+        --disable-ecdhe \
+        --disable-gost \
+        --disable-anon-authentication \
+        --disable-psk-authentication \
+        --disable-srp-authentication \
+        --disable-alpn-support \
+        --without-p11-kit \
+        --without-tpm2 \
+        --without-tpm \
+        --without-idn \
+        --without-brotli \
+        --without-zstd \
+        --disable-full-test-suite \
+        --disable-valgrind-tests \
+        --disable-seccomp-tests
+      make -j$(nproc) && make install
 }
 
 echo "=== 第一阶段：基础库 ==="
-build_gnutls 
 build_libhsts
 build_gmp
 build_libiconv
