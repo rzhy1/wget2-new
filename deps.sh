@@ -165,7 +165,7 @@ build_nettle() {
 
 build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
-  wget -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.11.tar.xz | tar x --xz || exit 1
+  wget -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz || exit 1
   cd gnutls-* || exit 1
   export gl_cv_func_nanosleep=yes
   export gl_cv_func_clock_gettime=yes
@@ -180,8 +180,8 @@ build_gnutls() {
   HOGWEED_CFLAGS=$CFLAGS \
   LIBIDN2_CFLAGS=$CFLAGS \
   ./configure CFLAGS="$CFLAGS" --host=$PREFIX --build=x86_64-pc-linux-gnu --prefix=$INSTALLDIR  --disable-openssl-compatibility --disable-hardware-acceleration --disable-shared --enable-static --without-p11-kit --disable-doc --disable-tests --disable-full-test-suite --disable-tools --disable-cxx --disable-maintainer-mode --disable-libdane || exit 1
-  make -C lib -j$(nproc) || exit 1
-  make  install || exit 1
+  make -j$(nproc) || exit 1
+  make install || exit 1
   cd .. && rm -rf gnutls-* 
 }
 
