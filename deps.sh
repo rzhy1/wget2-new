@@ -167,23 +167,6 @@ build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
   wget -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz || exit 1
   cd gnutls-* || exit 1
-  # 1. 删除所有测试目录
-  rm -rf src/gl/tests
-  
-  # 2. 修改 src/gl/Makefile.am 或 Makefile.in
-  if [ -f "src/gl/Makefile.am" ]; then
-    sed -i '/SUBDIRS =/ s/tests//g' src/gl/Makefile.am
-  fi
-  
-  if [ -f "src/gl/Makefile.in" ]; then
-    sed -i '/SUBDIRS =/ s/tests//g' src/gl/Makefile.in
-  fi
-  
-  # 3. 修改顶层的 Makefile.am 或 Makefile.in
-  sed -i '/SUBDIRS =/ s/tests//g' Makefile.am 2>/dev/null || true
-  sed -i '/SUBDIRS =/ s/tests//g' Makefile.in 2>/dev/null || true
-  
-  # 4. 配置时强制禁用测试
   LDFLAGS="-L$INSTALLDIR/lib $LDFLAGS"
   ./configure --host=$PREFIX \
     --prefix="$INSTALLDIR" \
@@ -219,15 +202,19 @@ build_gnutls() {
     gl_cv_func_nanosleep=yes \
     gl_cv_func_clock_gettime=yes
   
-  # 5. 确保最终的 Makefile 没有 tests
-  sed -i '/^SUBDIRS =/ s/ tests//g' src/gl/Makefile 2>/dev/null || true
+  # 只编译核心库，跳过 gnulib 和 tests
+  make -j$(nproc) -C lib || exit 1
   
-  # 6. 直接编译，跳过错误
-  make -j$(nproc) SUBDIRS="" all-recursive 2>/dev/null || \
-  make -j$(nproc) -k 2>/dev/null || \
-  make -j$(nproc)  # 最后尝试正常编译
+  # 手动安装
+  cp lib/.libs/libgnutls.a "$INSTALLDIR/lib/" 2>/dev/null || true
+  cp lib/.libs/libgnutls.la "$INSTALLDIR/lib/" 2>/dev/null || true
   
-  make install || exit 1
+  # 安装头文件
+  find lib -name "*.h" -type f | while read file; do
+    mkdir -p "$INSTALLDIR/include/gnutls/$(dirname ${file#lib/})"
+    cp "$file" "$INSTALLDIR/include/gnutls/${file#lib/}" 2>/dev/null || true
+  done
+
   cd .. && rm -rf gnutls-* 
 }
 
