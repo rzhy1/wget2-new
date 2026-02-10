@@ -9,9 +9,10 @@ export INSTALLDIR="$HOME/usr/local/$PREFIX"
 export PKG_CONFIG_PATH="$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH"
 export PKG_CONFIG_LIBDIR="$INSTALLDIR/lib/pkgconfig"
 export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
-export CPPFLAGS="-I$INSTALLDIR/include"
+export CPPFLAGS="-I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
 
-# [关键修改] 移除了 -flto 和 -fvisibility=hidden 以修复链接错误
+# [重点修改 1] 彻底删除了 -flto 和 -fvisibility=hidden
+# 在 MinGW 静态链接复杂依赖链时，这两个参数是万恶之源
 export LDFLAGS="-L$INSTALLDIR/lib -static -s"
 export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -g0"
 export CXXFLAGS="$CFLAGS"
@@ -19,7 +20,7 @@ export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/l
 export LD=x86_64-w64-mingw32-ld.lld
 ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
 
-# 确保安装目录存在
+# 确保目录存在
 mkdir -p $INSTALLDIR
 
 download_deps() { 
@@ -31,7 +32,6 @@ download_deps() {
   curl -L -o wget2-deps.tar.zst \
     https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
 
-  # ================== 解压依赖 ==================
   echo ">>> 解压 wget2-deps.tar.zst 到 $HOME/usr/local/$PREFIX"
   mkdir -p "$HOME/usr/local/$PREFIX"  
   
@@ -48,7 +48,7 @@ download_deps() {
 }
 
 build_brotli() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build brotli⭐⭐⭐⭐⭐⭐"
+  echo "⭐⭐⭐⭐⭐⭐ build brotli ⭐⭐⭐⭐⭐⭐"
   git clone --depth=1 https://github.com/google/brotli.git || exit 1
   cd brotli || exit 1
   mkdir build && cd build
@@ -65,7 +65,7 @@ build_brotli() {
 }
 
 build_xz() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build xz⭐⭐⭐⭐⭐⭐" 
+  echo "⭐⭐⭐⭐⭐⭐ build xz ⭐⭐⭐⭐⭐⭐" 
   apt-get purge -y xz-utils 2>/dev/null || true
   git clone --depth=1 https://github.com/tukaani-project/xz.git || { echo "Git clone failed"; exit 1; }
   cd xz || { echo "cd xz failed"; exit 1; }
@@ -77,7 +77,7 @@ build_xz() {
 }
 
 build_zstd() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build zstd⭐⭐⭐⭐⭐⭐" 
+  echo "⭐⭐⭐⭐⭐⭐ build zstd ⭐⭐⭐⭐⭐⭐" 
   rm -rf /tmp/venv
   python3 -m venv /tmp/venv
   source /tmp/venv/bin/activate
@@ -97,6 +97,7 @@ build_zstd() {
     -Ddefault_library=static \
     -Db_lto=true --optimization=2 \
     build/meson builddir-st || exit 1
+  
   rm -f /usr/local/bin/zstd*
   rm -f /usr/local/bin/*zstd
   meson compile -C builddir-st || exit 1
@@ -105,7 +106,7 @@ build_zstd() {
 }
 
 build_zlib-ng() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build zlib-ng⭐⭐⭐⭐⭐⭐" 
+  echo "⭐⭐⭐⭐⭐⭐ build zlib-ng ⭐⭐⭐⭐⭐⭐" 
   git clone --depth=1 https://github.com/zlib-ng/zlib-ng || exit 1
   cd zlib-ng || exit 1
   CROSS_PREFIX="x86_64-w64-mingw32-" ARCH="x86_64" CFLAGS="-Os" CC=x86_64-w64-mingw32-gcc ./configure --prefix=$INSTALLDIR --static --64 --zlib-compat || exit 1
@@ -115,7 +116,7 @@ build_zlib-ng() {
 }
 
 build_PCRE2() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build PCRE2⭐⭐⭐⭐⭐⭐" 
+  echo "⭐⭐⭐⭐⭐⭐ build PCRE2 ⭐⭐⭐⭐⭐⭐" 
   git clone --depth=1 https://github.com/PCRE2Project/pcre2 || exit 1
   cd pcre2 || exit 1
   ./autogen.sh || exit 1
@@ -126,7 +127,7 @@ build_PCRE2() {
 }
 
 build_libpsl() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libpsl⭐⭐⭐⭐⭐⭐" 
+  echo "⭐⭐⭐⭐⭐⭐ build libpsl ⭐⭐⭐⭐⭐⭐" 
   git clone --depth=1 --recursive https://github.com/rockdaboot/libpsl.git || exit 1
   cd libpsl || exit 1
   ./autogen.sh || exit 1
@@ -137,21 +138,38 @@ build_libpsl() {
 }
 
 build_wget2() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build wget2⭐⭐⭐⭐⭐⭐" 
+  echo "⭐⭐⭐⭐⭐⭐ build wget2 ⭐⭐⭐⭐⭐⭐" 
   git clone https://gitlab.com/gnuwget/wget2.git || exit 1
   cd wget2 || exit 1
   if [ -d "gnulib" ]; then rm -rf gnulib; fi
   git clone --depth=1 https://github.com/coreutils/gnulib.git
   ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
   
-  export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
-  export CPPFLAGS="-I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
+  # [重点修改 2] 定义完整的静态依赖链
+  # 我们不依赖 configure 的自动检测，而是强制通过 LIBS 变量传递给链接器
+  # 这样确保了这些库一定会出现在 link command 的最后面
   
-  # [关键修改] 补全所有静态链接依赖，尤其是 ws2_32, crypt32, unistring, iconv
+  # SSL 和 Crypto 依赖 (顺序严格：gnutls -> hogweed -> nettle -> gmp)
+  MY_SSL_LIBS="-lgnutls -lhogweed -lnettle -lgmp"
+  
+  # 基础依赖库 (idn2 -> unistring/iconv)
+  MY_BASE_LIBS="-ltasn1 -lidn2 -lunistring -liconv"
+  
+  # Windows 系统库 (ws2_32用于网络, crypt32/bcrypt/ncrypt用于加密)
+  MY_SYS_LIBS="-lbcrypt -lncrypt -lws2_32 -lcrypt32 -lsecur32 -luser32 -lkernel32"
+  
+  # 压缩库
+  MY_COMP_LIBS="-lzstd -lbrotlidec -lbrotlicommon -lz -lpcre2-8"
+
+  # [重点修改 3] 将所有内容塞入 LIBS 环境变量
+  # 这就像是一个核武器选项，强制链接器看到这些库
+  export LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS $MY_COMP_LIBS -lpsl -lwinpthread"
+
+  # 我们依然设置 specific vars 以防万一，但 LIBS 是保底
   GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
-  GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lunistring -liconv -lbcrypt -lncrypt -lws2_32 -lcrypt32" \
+  GNUTLS_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS" \
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
-  LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl -lidn2 -lunistring -liconv" \
+  LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl $MY_BASE_LIBS" \
   LIBPCRE2_CFLAGS="-I$INSTALLDIR/include" \
   LIBPCRE2_LIBS="-L$INSTALLDIR/lib -lpcre2-8"  \
   ./configure \
@@ -181,13 +199,19 @@ build_wget2() {
   cp -fv "$INSTALLDIR/wget2/src/wget2.exe" "${GITHUB_WORKSPACE}" || exit 1
 }
 
-# 确保 libpsl 在 wget2 之前编译
+# 流程执行
 download_deps
 wait
+
+# 并行编译依赖
 build_brotli &
 build_zstd &
 build_zlib-ng &
 build_PCRE2 &
 wait
-build_libpsl
+
+# 单独编译 libpsl，防止并发问题
+build_libpsl 
+
+# 最后编译 wget2
 build_wget2
