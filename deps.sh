@@ -166,10 +166,9 @@ build_nettle() {
 build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
   if [ ! -f "$INSTALLDIR/lib/libgnutls.a" ]; then
-    echo "尝试直接下载 3.8.12..."
     wget -q https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-gnutls-3.8.12-1-any.pkg.tar.zst -O gnutls.zst
     zstd -d gnutls.zst -o gnutls.tar
-    tar -xf gnutls.tar --strip-components=2 -C "$INSTALLDIR" mingw64/lib mingw64/include
+    tar -xf gnutls.tar --strip-components=1 -C "$INSTALLDIR" mingw64
     rm -f gnutls.zst gnutls.tar
   fi
   
@@ -182,6 +181,7 @@ build_gnutls() {
 }
 
 echo "=== 第一阶段：基础库 ==="
+build_gnutls 
 build_libhsts
 build_gmp
 build_libiconv
