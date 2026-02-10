@@ -167,17 +167,16 @@ build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
   wget -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz || exit 1
   cd gnutls-* || exit 1
-  sed -i '/#include <config.h>/a \
-  #if defined(__MINGW32__) \
-  int nanosleep(const struct timespec *requested_delay, struct timespec *remaining_delay) { return 0; } \
-  #endif
-  ' src/gl/nanosleep.c
-
-  export gl_cv_func_nanosleep=yes
-  export gl_cv_func_clock_gettime=yes
-  LDFLAGS="-L$INSTALLDIR/lib $LDFLAGS"
-  CPPFLAGS="-I$INSTALLDIR/include"
-  CFLAGS="$CFLAGS"
+  # 清理并重置环境变量（避免之前设置的影响）
+  local SAVE_LDFLAGS="$LDFLAGS"
+  local SAVE_CFLAGS="$CFLAGS"
+  local SAVE_CPPFLAGS="$CPPFLAGS"
+  
+  # 设置编译环境
+  export LDFLAGS="-L$INSTALLDIR/lib -static -s -flto=$(nproc)"
+  export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -flto=$(nproc) -g0 -fvisibility=hidden"
+  export CPPFLAGS="-I$INSTALLDIR/include"
+  
   ./configure --host=$PREFIX \
     --prefix="$INSTALLDIR" \
     --with-included-unistring \
@@ -208,10 +207,15 @@ build_gnutls() {
     --without-zstd \
     --disable-full-test-suite \
     --disable-valgrind-tests \
-    --disable-seccomp-tests \
-    LDFLAGS="$LDFLAGS" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS"
-  make  -j$(nproc) || exit 1
+    --disable-seccomp-tests
+  
+  make -j$(nproc) || exit 1
   make install || exit 1
+  
+  # 恢复环境变量
+  export LDFLAGS="$SAVE_LDFLAGS"
+  export CFLAGS="$SAVE_CFLAGS"
+  export CPPFLAGS="$SAVE_CPPFLAGS"
   cd .. && rm -rf gnutls-* 
 }
 
