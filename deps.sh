@@ -169,49 +169,41 @@ build_gnutls() {
   cd gnutls-* || exit 1
   export gl_cv_func_nanosleep=yes
   export gl_cv_func_clock_gettime=yes
-  GMP_LIBS="-L$INSTALLDIR/lib -lgmp" \
-  NETTLE_LIBS="-L$INSTALLDIR/lib -lnettle -lgmp" \
-  HOGWEED_LIBS="-L$INSTALLDIR/lib -lhogweed -lnettle -lgmp" \
-  LIBTASN1_LIBS="-L$INSTALLDIR/lib -ltasn1" \
-  LIBIDN2_LIBS="-L$INSTALLDIR/lib -lidn2" \
-  GMP_CFLAGS=$CFLAGS \
-  LIBTASN1_CFLAGS=$CFLAGS \
-  NETTLE_CFLAGS=$CFLAGS \
-  HOGWEED_CFLAGS=$CFLAGS \
-  LIBIDN2_CFLAGS=$CFLAGS \
-  ./configure CFLAGS="$CFLAGS"  \
-  --host=$PREFIX \
-  --build=x86_64-pc-linux-gnu \
-  --prefix=$INSTALLDIR  \
-  --with-included-unistring \
-        --disable-nls \
-        --disable-shared \
-        --enable-static \
-        --disable-doc \
-        --disable-tools \
-        --disable-cxx \
-        --disable-tests \
-        --disable-maintainer-mode \
-        --disable-hardware-acceleration \
-        --disable-padlock \
-        --disable-ocsp \
-        --disable-dsa \
-        --disable-dhe \
-        --disable-ecdhe \
-        --disable-gost \
-        --disable-anon-authentication \
-        --disable-psk-authentication \
-        --disable-srp-authentication \
-        --disable-alpn-support \
-        --without-p11-kit \
-        --without-tpm2 \
-        --without-tpm \
-        --without-idn \
-        --without-brotli \
-        --without-zstd \
-        --disable-full-test-suite \
-        --disable-valgrind-tests \
-        --disable-seccomp-tests
+  LDFLAGS="-L$INSTALLDIR/lib $LDFLAGS"
+  CPPFLAGS="-I$INSTALLDIR/include"
+  CFLAGS="$CFLAGS"
+  ./configure --host=$PREFIX \
+    --prefix="$INSTALLDIR" \
+    --with-included-unistring \
+    --disable-nls \
+    --disable-shared \
+    --enable-static \
+    --disable-doc \
+    --disable-tools \
+    --disable-cxx \
+    --disable-tests \
+    --disable-maintainer-mode \
+    --disable-hardware-acceleration \
+    --disable-padlock \
+    --disable-ocsp \
+    --disable-dsa \
+    --disable-dhe \
+    --disable-ecdhe \
+    --disable-gost \
+    --disable-anon-authentication \
+    --disable-psk-authentication \
+    --disable-srp-authentication \
+    --disable-alpn-support \
+    --without-p11-kit \
+    --without-tpm2 \
+    --without-tpm \
+    --without-idn \
+    --without-brotli \
+    --without-zstd \
+    --disable-full-test-suite \
+    --disable-valgrind-tests \
+    --disable-seccomp-tests \
+    LDFLAGS="$LDFLAGS" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS"
   make  -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf gnutls-* 
