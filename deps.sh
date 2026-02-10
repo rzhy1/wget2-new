@@ -165,57 +165,20 @@ build_nettle() {
 
 build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
-  wget -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz || exit 1
-  cd gnutls-* || exit 1
-  LDFLAGS="-L$INSTALLDIR/lib $LDFLAGS"
-  ./configure --host=$PREFIX \
-    --prefix="$INSTALLDIR" \
-    --with-included-unistring \
-    --disable-nls \
-    --disable-shared \
-    --enable-static \
-    --disable-doc \
-    --disable-tools \
-    --disable-cxx \
-    --disable-tests \
-    --disable-maintainer-mode \
-    --disable-hardware-acceleration \
-    --disable-padlock \
-    --disable-ocsp \
-    --disable-dsa \
-    --disable-dhe \
-    --disable-ecdhe \
-    --disable-gost \
-    --disable-anon-authentication \
-    --disable-psk-authentication \
-    --disable-srp-authentication \
-    --disable-alpn-support \
-    --without-p11-kit \
-    --without-tpm2 \
-    --without-tpm \
-    --without-idn \
-    --without-brotli \
-    --without-zstd \
-    --disable-full-test-suite \
-    --disable-valgrind-tests \
-    --disable-seccomp-tests \
-    gl_cv_func_nanosleep=yes \
-    gl_cv_func_clock_gettime=yes
+  if [ ! -f "$INSTALLDIR/lib/libgnutls.a" ]; then
+    echo "尝试直接下载 3.8.12..."
+    wget -q https://mirror.msys2.org/mingw/mingw64/mingw-w64-x86_64-gnutls-3.8.12-1-any.pkg.tar.zst -O gnutls.zst
+    zstd -d gnutls.zst -o gnutls.tar
+    tar -xf gnutls.tar --strip-components=2 -C "$INSTALLDIR" mingw64/lib mingw64/include
+    rm -f gnutls.zst gnutls.tar
+  fi
   
-  # 只编译核心库，跳过 gnulib 和 tests
-  make -j$(nproc) -C lib || exit 1
-  
-  # 手动安装
-  cp lib/.libs/libgnutls.a "$INSTALLDIR/lib/" 2>/dev/null || true
-  cp lib/.libs/libgnutls.la "$INSTALLDIR/lib/" 2>/dev/null || true
-  
-  # 安装头文件
-  find lib -name "*.h" -type f | while read file; do
-    mkdir -p "$INSTALLDIR/include/gnutls/$(dirname ${file#lib/})"
-    cp "$file" "$INSTALLDIR/include/gnutls/${file#lib/}" 2>/dev/null || true
-  done
-
-  cd .. && rm -rf gnutls-* 
+  # 验证安装
+  if [ -f "$INSTALLDIR/lib/libgnutls.a" ]; then
+    echo "✓ gnutls 安装成功"
+  else
+    echo "✗ gnutls 安装失败"
+  fi
 }
 
 echo "=== 第一阶段：基础库 ==="
