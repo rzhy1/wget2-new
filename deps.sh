@@ -167,6 +167,12 @@ build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
   wget -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz || exit 1
   cd gnutls-* || exit 1
+  sed -i '/#include <config.h>/a \
+  #if defined(__MINGW32__) \
+  int nanosleep(const struct timespec *requested_delay, struct timespec *remaining_delay) { return 0; } \
+  #endif
+  ' src/gl/nanosleep.c
+
   export gl_cv_func_nanosleep=yes
   export gl_cv_func_clock_gettime=yes
   LDFLAGS="-L$INSTALLDIR/lib $LDFLAGS"
