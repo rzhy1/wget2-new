@@ -167,32 +167,6 @@ build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
   wget -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz || exit 1
   cd gnutls-* || exit 1
-  # --- patch gnutls socket.h for Windows (MinGW) ---
-  sed -i '1,$c\
-  #pragma once\n\
-  \n\
-  #include <gnutls/gnutls.h>\n\
-  \n\
-  #ifdef _WIN32\n\
-    #include <winsock2.h>\n\
-    #include <ws2tcpip.h>\n\
-    typedef SOCKET gnutls_socket_t;\n\
-  #else\n\
-    #include <sys/socket.h>\n\
-    typedef int gnutls_socket_t;\n\
-  #endif\n\
-  \n\
-  #ifdef __cplusplus\n\
-  extern "C" {\n\
-  #endif\n\
-  \n\
-  void gnutls_transport_set_fastopen(gnutls_session_t session, gnutls_socket_t fd, struct sockaddr *connect_addr, socklen_t connect_addrlen, unsigned int flags);\n\
-  \n\
-  #ifdef __cplusplus\n\
-  }\n\
-  #endif' lib/includes/gnutls/socket.h
-  sed -i 's|#include <byteswap.h>|#ifdef _WIN32\n#include <stdlib.h>\n#define bswap_16(x) _byteswap_ushort(x)\n#define bswap_32(x) _byteswap_ulong(x)\n#define bswap_64(x) _byteswap_uint64(x)\n#else\n#include <byteswap.h>\n#endif|' lib/num.h
-
   export gl_cv_func_nanosleep=yes
   export gl_cv_func_clock_gettime=yes
   GMP_LIBS="-L$INSTALLDIR/lib -lgmp" \
@@ -205,8 +179,40 @@ build_gnutls() {
   NETTLE_CFLAGS=$CFLAGS \
   HOGWEED_CFLAGS=$CFLAGS \
   LIBIDN2_CFLAGS=$CFLAGS \
-  ./configure CFLAGS="$CFLAGS" --host=$PREFIX --build=x86_64-pc-linux-gnu --prefix=$INSTALLDIR  --disable-openssl-compatibility --disable-hardware-acceleration --disable-shared --enable-static --without-p11-kit --disable-doc --disable-tests --disable-full-test-suite --disable-tools --disable-cxx --disable-maintainer-mode --disable-libdane || exit 1
-  make -C lib -j$(nproc) || exit 1
+  ./configure CFLAGS="$CFLAGS"  \
+  --host=$PREFIX \
+  --build=x86_64-pc-linux-gnu \
+  --prefix=$INSTALLDIR  \
+  --with-included-unistring \
+        --disable-nls \
+        --disable-shared \
+        --enable-static \
+        --disable-doc \
+        --disable-tools \
+        --disable-cxx \
+        --disable-tests \
+        --disable-maintainer-mode \
+        --disable-hardware-acceleration \
+        --disable-padlock \
+        --disable-ocsp \
+        --disable-dsa \
+        --disable-dhe \
+        --disable-ecdhe \
+        --disable-gost \
+        --disable-anon-authentication \
+        --disable-psk-authentication \
+        --disable-srp-authentication \
+        --disable-alpn-support \
+        --without-p11-kit \
+        --without-tpm2 \
+        --without-tpm \
+        --without-idn \
+        --without-brotli \
+        --without-zstd \
+        --disable-full-test-suite \
+        --disable-valgrind-tests \
+        --disable-seccomp-tests
+  make  -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf gnutls-* 
 }
