@@ -10,14 +10,17 @@ export PKG_CONFIG_PATH="$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig:$PK
 export PKG_CONFIG_LIBDIR="$INSTALLDIR/lib/pkgconfig"
 export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
 export CPPFLAGS="-I$INSTALLDIR/include"
-export LDFLAGS="-L$INSTALLDIR/lib -static -s -flto=$(nproc)"
-export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -flto=$(nproc) -g0 -fvisibility=hidden"
+
+# [关键修改] 移除了 -flto 和 -fvisibility=hidden 以修复链接错误
+export LDFLAGS="-L$INSTALLDIR/lib -static -s"
+export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -g0"
 export CXXFLAGS="$CFLAGS"
 export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
 export LD=x86_64-w64-mingw32-ld.lld
 ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
-# 当前路径是：/__w/wget2-windows/wget2-windows
-# INSTALLDIR是：/github/home/usr/local/x86_64-w64-mingw32
+
+# 确保安装目录存在
+mkdir -p $INSTALLDIR
 
 download_deps() { 
   echo ">>> 下载 wget2-deps.tar.zst"
@@ -34,7 +37,6 @@ download_deps() {
   
   if command -v zstd >/dev/null 2>&1; then
     tar -I zstd -xf wget2-deps.tar.zst -C "$HOME/usr/local/$PREFIX"
-
   else
     unzstd -c wget2-deps.tar.zst | tar -xf - -C "$HOME/usr/local/$PREFIX"
   fi
@@ -44,7 +46,6 @@ download_deps() {
 
   cd "$INSTALLDIR" || { echo "❌ $INSTALLDIR 不存在"; exit 1; }
 }
-
 
 build_brotli() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build brotli⭐⭐⭐⭐⭐⭐"
@@ -59,39 +60,29 @@ build_brotli() {
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_BUILD_TYPE=Release || exit 1
   make -j$(nproc) install || exit 1
-  echo "显示原版libbrotlidec.pc内容"
-  cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
   sed -i 's/^Libs: .*/& -lbrotlicommon/' "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
   cd ../.. && rm -rf brotli
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommo结果如下⭐⭐⭐⭐⭐⭐" 
-  pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
-  echo "显示新版libbrotlidec.pc内容"
-  cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
 }
 
 build_xz() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build xz⭐⭐⭐⭐⭐⭐" 
-  apt-get purge xz-utils
+  apt-get purge -y xz-utils 2>/dev/null || true
   git clone --depth=1 https://github.com/tukaani-project/xz.git || { echo "Git clone failed"; exit 1; }
   cd xz || { echo "cd xz failed"; exit 1; }
-  mkdir build
-  cd build
-  cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release -DXZ_NLS=ON -DBUILD_SHARED_LIBS=OFF || { echo "CMake failed"; exit 1; }
+  mkdir build && cd build
+  cmake .. -DCMAKE_INSTALL_PREFIX=$INSTALLDIR -DCMAKE_BUILD_TYPE=Release -DXZ_NLS=ON -DBUILD_SHARED_LIBS=OFF || { echo "CMake failed"; exit 1; }
   cmake --build . -- -j$(nproc) || { echo "Build failed"; exit 1; }
   cmake --install . || { echo "Install failed"; exit 1; }
-  xz --version
   cd ../.. && rm -rf xz
 }
 
 build_zstd() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build zstd⭐⭐⭐⭐⭐⭐" 
-  # 创建 Python 虚拟环境并安装meson
   rm -rf /tmp/venv
   python3 -m venv /tmp/venv
   source /tmp/venv/bin/activate
   pip3 install --no-cache-dir meson pytest
 
-  # 编译 zstd
   git clone --depth=1 https://github.com/facebook/zstd.git || exit 1
   cd zstd || exit 1
   meson setup \
@@ -121,12 +112,6 @@ build_zlib-ng() {
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf zlib-ng
-}
-
-build_gnulibmirror() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnulib-mirror⭐⭐⭐⭐⭐⭐" 
-  git clone --recursive --depth=1 https://gitlab.com/gnuwget/gnulib-mirror.git gnulib || exit 1
-  export GNULIB_REFDIR=$INSTALLDIR/gnulib
 }
 
 build_PCRE2() {
@@ -159,14 +144,10 @@ build_wget2() {
   git clone --depth=1 https://github.com/coreutils/gnulib.git
   ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
   
-  # [修改点 2] 链接 WinPthread 
   export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
   export CPPFLAGS="-I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
-
-  # 顺序非常关键：依赖者在左，被依赖者在右
-  # gnutls -> hogweed -> nettle -> gmp
-  # 以及 -> tasn1, idn2, unistring, iconv
-  # 以及系统库 -> bcrypt, ncrypt, ws2_32, crypt32
+  
+  # [关键修改] 补全所有静态链接依赖，尤其是 ws2_32, crypt32, unistring, iconv
   GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
   GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lunistring -liconv -lbcrypt -lncrypt -lws2_32 -lcrypt32" \
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
@@ -199,6 +180,8 @@ build_wget2() {
   strip $INSTALLDIR/wget2/src/wget2.exe || exit 1
   cp -fv "$INSTALLDIR/wget2/src/wget2.exe" "${GITHUB_WORKSPACE}" || exit 1
 }
+
+# 确保 libpsl 在 wget2 之前编译
 download_deps
 wait
 build_brotli &
@@ -206,4 +189,5 @@ build_zstd &
 build_zlib-ng &
 build_PCRE2 &
 wait
+build_libpsl
 build_wget2
