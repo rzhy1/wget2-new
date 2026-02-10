@@ -167,12 +167,10 @@ build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
   wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz
       cd gnutls-* || exit
-      localt CFLAGS="-march=tigerlake -mtune=tigerlake -O2 -pipe -ffunction-sections -fdata-sections -fuse-linker-plugin -fvisibility=hidden -fno-stack-protector -fomit-frame-pointer -DNDEBUG"
-      local CXXFLAGS="$CFLAGS"
-      local LDFLAGS_DEPS="-static -static-libgcc -Wl,--gc-sections -Wl,-S"
+      LIBS="-lwinpthread" \
+      ac_cv_func_nanosleep='yes' \
       gl_cv_func_nanosleep='yes' \
-      gl_cv_func_sleep_works='yes' \
-      LDFLAGS="-L$INSTALLDIR/lib $LDFLAGS_DEPS" ./configure --host=$PREFIX  \
+      ./configure --host=$PREFIX  \
         --prefix="$INSTALLDIR" \
         --with-included-unistring \
         --disable-nls \
@@ -203,7 +201,8 @@ build_gnutls() {
         --disable-full-test-suite \
         --disable-valgrind-tests \
         --disable-seccomp-tests
-      make -j$(nproc) && make install
+      make -j$(nproc)  || exit 1
+      make install  || exit 1
 }
 
 echo "=== 第一阶段：基础库 ==="
