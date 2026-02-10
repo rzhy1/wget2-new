@@ -155,18 +155,23 @@ build_wget2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build wget2⭐⭐⭐⭐⭐⭐" 
   git clone https://gitlab.com/gnuwget/wget2.git || exit 1
   cd wget2 || exit 1
-  if [ -d "gnulib" ]; then
-      rm -rf gnulib
-  fi
+  if [ -d "gnulib" ]; then rm -rf gnulib; fi
   git clone --depth=1 https://github.com/coreutils/gnulib.git
   ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
+  
+  # [修改点 2] 链接 WinPthread 
   export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
   export CPPFLAGS="-I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
-  GNUTLS_CFLAGS=$CFLAGS \
-  GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lbcrypt -lncrypt" \
-  LIBPSL_CFLAGS=$CFLAGS \
-  LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl" \
-  LIBPCRE2_CFLAGS=$CFLAGS \
+
+  # 顺序非常关键：依赖者在左，被依赖者在右
+  # gnutls -> hogweed -> nettle -> gmp
+  # 以及 -> tasn1, idn2, unistring, iconv
+  # 以及系统库 -> bcrypt, ncrypt, ws2_32, crypt32
+  GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
+  GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lunistring -liconv -lbcrypt -lncrypt -lws2_32 -lcrypt32" \
+  LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
+  LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl -lidn2 -lunistring -liconv" \
+  LIBPCRE2_CFLAGS="-I$INSTALLDIR/include" \
   LIBPCRE2_LIBS="-L$INSTALLDIR/lib -lpcre2-8"  \
   ./configure \
     --build=x86_64-pc-linux-gnu \
@@ -183,11 +188,14 @@ build_wget2() {
     --without-lzma \
     --with-zstd \
     --without-bzip2 \
-    --enable-threads=windows
+    --enable-threads=windows || exit 1
+
+  # Winsock 补丁
   sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#include <pthread.h>\n#endif' tests/libtest.c
   sed -i 's/int flags = fcntl(client_fd, F_GETFL, 0);/#ifdef _WIN32\n\t\tunsigned long mode = 1;\n\t\tioctlsocket(client_fd, FIONBIO, \&mode);\n#else\n\t\tint flags = fcntl(client_fd, F_GETFL, 0);/' tests/libtest.c
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
-  make -j$(nproc)  || exit 1
+  
+  make -j$(nproc) || exit 1
   strip $INSTALLDIR/wget2/src/wget2.exe || exit 1
   cp -fv "$INSTALLDIR/wget2/src/wget2.exe" "${GITHUB_WORKSPACE}" || exit 1
 }
