@@ -191,6 +191,8 @@ build_gnutls() {
   #ifdef __cplusplus\n\
   }\n\
   #endif' lib/includes/gnutls/socket.h
+  sed -i '1,20s|#include <byteswap.h>|#ifdef _WIN32\n#include <stdlib.h>\n#define bswap_16(x) _byteswap_ushort(x)\n#define bswap_32(x) _byteswap_ulong(x)\n#define bswap_64(x) _byteswap_uint64(x)\n#else\n#include <byteswap.h>\n#endif|' lib/num.h
+
 
   export gl_cv_func_nanosleep=yes
   export gl_cv_func_clock_gettime=yes
