@@ -170,6 +170,8 @@ build_gnutls() {
       localt CFLAGS="-march=tigerlake -mtune=tigerlake -O2 -pipe -ffunction-sections -fdata-sections -fuse-linker-plugin -fvisibility=hidden -fno-stack-protector -fomit-frame-pointer -DNDEBUG"
       local CXXFLAGS="$CFLAGS"
       local LDFLAGS_DEPS="-static -static-libgcc -Wl,--gc-sections -Wl,-S"
+      gl_cv_func_nanosleep='yes' \
+      gl_cv_func_sleep_works='yes' \
       LDFLAGS="-L$INSTALLDIR/lib $LDFLAGS_DEPS" ./configure --host=$PREFIX  \
         --prefix="$INSTALLDIR" \
         --with-included-unistring \
