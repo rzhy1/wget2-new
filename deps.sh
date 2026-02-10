@@ -168,8 +168,30 @@ build_gnutls() {
   wget -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz || exit 1
   cd gnutls-* || exit 1
   # --- patch gnutls socket.h for Windows (MinGW) ---
-  sed -i 's|#include <sys/socket.h>|#if defined(_WIN32) || defined(__MINGW32__)\n#include <winsock2.h>\n#include <ws2tcpip.h>\ntypedef SOCKET gnutls_socket_t;\n#else\n#include <sys/socket.h>\ntypedef int gnutls_socket_t;\n#endif|' \
-  lib/includes/gnutls/socket.h
+  sed -i '1,$c\
+  #pragma once\n\
+  \n\
+  #include <gnutls/gnutls.h>\n\
+  \n\
+  #ifdef _WIN32\n\
+    #include <winsock2.h>\n\
+    #include <ws2tcpip.h>\n\
+    typedef SOCKET gnutls_socket_t;\n\
+  #else\n\
+    #include <sys/socket.h>\n\
+    typedef int gnutls_socket_t;\n\
+  #endif\n\
+  \n\
+  #ifdef __cplusplus\n\
+  extern "C" {\n\
+  #endif\n\
+  \n\
+  void gnutls_transport_set_fastopen(gnutls_session_t session, gnutls_socket_t fd, struct sockaddr *connect_addr, socklen_t connect_addrlen, unsigned int flags);\n\
+  \n\
+  #ifdef __cplusplus\n\
+  }\n\
+  #endif' lib/includes/gnutls/socket.h
+
   export gl_cv_func_nanosleep=yes
   export gl_cv_func_clock_gettime=yes
   GMP_LIBS="-L$INSTALLDIR/lib -lgmp" \
