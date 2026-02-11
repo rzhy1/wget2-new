@@ -174,7 +174,7 @@ build_wget2() {
   fi
 
   # ========== 配置编译 ==========
-  export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib"
+  export LDFLAGS="$LDFLAGS -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
   export CPPFLAGS="$CPPFLAGS -I$INSTALLDIR/include"
 
   GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
