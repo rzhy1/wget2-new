@@ -1,5 +1,5 @@
 #!/bin/bash
-# wget2 build script for Windows environment (Fixed: Missing libwget)
+# wget2 build script for Windows environment (Fixed: Sequential Build)
 # Author: rzhy1
 # 2025/10/3
 
@@ -156,7 +156,6 @@ build_wget2() {
   export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -static"
 
   # 配置 Configure
-  # 添加 ac_cv_func_* 参数以解决 rpl_malloc 警告
   GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
   GNUTLS_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS" \
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
@@ -187,12 +186,20 @@ build_wget2() {
   sed -i 's/int flags = fcntl(client_fd, F_GETFL, 0);/#ifdef _WIN32\n\t\tunsigned long mode = 1;\n\t\tioctlsocket(client_fd, FIONBIO, \&mode);\n#else\n\t\tint flags = fcntl(client_fd, F_GETFL, 0);/' tests/libtest.c
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
   
-  # 【关键修正】指定正确的编译目录顺序：lib -> include -> libwget -> src
-  # 这样 libwget.la 会在编译 src 之前生成
+  # 【关键修正】分步编译，避免 SUBDIRS 变量污染子目录
   FULL_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS $MY_COMP_LIBS -lpsl"
   
-  echo ">>> 开始编译 wget2 (Modules: lib include libwget src)..."
-  make -j$(nproc) SUBDIRS="lib include libwget src" LIBS="$FULL_LIBS" || exit 1
+  echo ">>> 步骤 1/4: 编译 lib (Gnulib)"
+  make -C lib -j$(nproc) || exit 1
+
+  echo ">>> 步骤 2/4: 编译 include"
+  make -C include -j$(nproc) || exit 1
+
+  echo ">>> 步骤 3/4: 编译 libwget"
+  make -C libwget -j$(nproc) LIBS="$FULL_LIBS" || exit 1
+
+  echo ">>> 步骤 4/4: 编译 src (wget2.exe)"
+  make -C src -j$(nproc) LIBS="$FULL_LIBS" || exit 1
 
   # 检查产物
   if [ -f "$INSTALLDIR/wget2/src/wget2.exe" ]; then
