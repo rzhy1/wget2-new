@@ -133,29 +133,38 @@ build_libpsl() {
 }
 
 build_wget2() {
-  echo "⭐⭐⭐⭐⭐⭐ build wget2 ⭐⭐⭐⭐⭐⭐" 
+  echo "⭐⭐⭐⭐⭐⭐ build wget2 ⭐⭐⭐⭐⭐⭐"
   git clone https://gitlab.com/gnuwget/wget2.git || exit 1
   cd wget2 || exit 1
   if [ -d "gnulib" ]; then rm -rf gnulib; fi
   git clone --depth=1 https://github.com/coreutils/gnulib.git
   ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
 
-  # 定义库链
-  MY_SSL_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp"
-  MY_BASE_LIBS="-ltasn1 -lidn2 -lunistring -liconv"
+  # ---------- 1. 彻底清除旧版 GnuTLS（来自预下载依赖）----------
+  echo ">>> 清除旧版 GnuTLS 库和 pc 文件，确保链接器找到新版"
+  rm -vf "$INSTALLDIR/lib"/libgnutls*
+  rm -vf "$INSTALLDIR/lib/pkgconfig/gnutls.pc"
+  # 如果新版 GnuTLS 安装在别处，请确保 INSTALLDIR 指向正确位置
+
+  # ---------- 2. PCRE2 强制静态链接（删除导入库）----------
+  export LIBPCRE2_CFLAGS="-I$INSTALLDIR/include"
+  export LIBPCRE2_LIBS="-L$INSTALLDIR/lib -Wl,-Bstatic -lpcre2-8 -Wl,-Bdynamic"
+  rm -f "$INSTALLDIR/lib"/libpcre2*.dll.a
+
+  # ---------- 3. GnuTLS 强制静态链接（包裹所有依赖）----------
+  export GNUTLS_CFLAGS="-I$INSTALLDIR/include"
+  export GNUTLS_LIBS="-L$INSTALLDIR/lib -Wl,-Bstatic -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lunistring -liconv -Wl,-Bdynamic"
+
+  # ---------- 4. 其他库（系统库、压缩库）----------
   MY_SYS_LIBS="-lbcrypt -lncrypt -lws2_32 -lcrypt32 -lsecur32 -luser32 -lkernel32 -lwinpthread"
   MY_COMP_LIBS="-lzstd -lbrotlidec -lbrotlicommon -lz"
 
-  # 设置 LDFLAGS 确保静态
   export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -static"
+  export CPPFLAGS="$CPPFLAGS -I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
 
-  # 配置 Configure
-  GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
-  GNUTLS_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS" \
+  # ---------- 5. 配置 ----------
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
-  LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl $MY_BASE_LIBS" \
-  LIBPCRE2_CFLAGS="-I$INSTALLDIR/include" \
-  LIBPCRE2_LIBS="-L$INSTALLDIR/lib -Wl,-Bstatic -lpcre2-8 -Wl,-Bdynamic"
+  LIBPSL_LIBS="-L$INSTALLDIR/lib -Wl,-Bstatic -lpsl -lidn2 -lunistring -liconv -Wl,-Bdynamic" \
   ./configure \
     --build=x86_64-pc-linux-gnu \
     --host=$PREFIX \
@@ -175,14 +184,14 @@ build_wget2() {
     ac_cv_func_malloc_0_nonnull=yes \
     ac_cv_func_realloc_0_nonnull=yes || exit 1
 
-  # Winsock 补丁
+  # ---------- 6. Winsock 补丁 ----------
   sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#include <pthread.h>\n#endif' tests/libtest.c
   sed -i 's/int flags = fcntl(client_fd, F_GETFL, 0);/#ifdef _WIN32\n\t\tunsigned long mode = 1;\n\t\tioctlsocket(client_fd, FIONBIO, \&mode);\n#else\n\t\tint flags = fcntl(client_fd, F_GETFL, 0);/' tests/libtest.c
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
-  
-  # 【关键修正】分步编译，避免 SUBDIRS 变量污染子目录
-  FULL_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS $MY_COMP_LIBS -lpsl"
-  
+
+  # ---------- 7. 完整链接库 ----------
+  FULL_LIBS="$GNUTLS_LIBS $MY_SYS_LIBS $MY_COMP_LIBS -lpsl -lpcre2-8"
+
   echo ">>> 步骤 1/4: 编译 lib (Gnulib)"
   make -C lib -j$(nproc) || exit 1
 
@@ -195,11 +204,11 @@ build_wget2() {
   echo ">>> 步骤 4/4: 编译 src (wget2.exe)"
   make -C src -j$(nproc) LIBS="$FULL_LIBS" || exit 1
 
-  # 检查产物
-  if [ -f "$INSTALLDIR/wget2/src/wget2.exe" ]; then
+  # ---------- 8. 检查产物（修正路径）----------
+  if [ -f "src/wget2.exe" ]; then
       echo "✅ 编译成功！"
-      strip $INSTALLDIR/wget2/src/wget2.exe
-      cp -fv "$INSTALLDIR/wget2/src/wget2.exe" "${GITHUB_WORKSPACE}"
+      strip src/wget2.exe
+      cp -fv src/wget2.exe "${GITHUB_WORKSPACE}"
   else
       echo "❌ 编译失败：未找到 wget2.exe"
       exit 1
