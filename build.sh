@@ -1,5 +1,5 @@
 #!/bin/bash
-# wget2 build script for Windows environment (Fixed: Make Params)
+# wget2 build script for Windows environment (Fixed: Missing libwget)
 # Author: rzhy1
 # 2025/10/3
 
@@ -13,7 +13,7 @@ export CPPFLAGS="-I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
 
 # LDFLAGS: 强制静态链接
 export LDFLAGS="-L$INSTALLDIR/lib -static -s"
-# CFLAGS: 优化参数
+# CFLAGS: 优化参数，-fno-ident 减小体积
 export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -g0 -fno-ident"
 export CXXFLAGS="$CFLAGS"
 export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
@@ -32,7 +32,6 @@ download_deps() {
   cd "$HOME/deps"
 
   rm -f wget2-deps.tar.zst
-  # 请确保该下载链接有效
   curl -L -o wget2-deps.tar.zst \
     https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
 
@@ -157,6 +156,7 @@ build_wget2() {
   export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -static"
 
   # 配置 Configure
+  # 添加 ac_cv_func_* 参数以解决 rpl_malloc 警告
   GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
   GNUTLS_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS" \
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
@@ -178,20 +178,21 @@ build_wget2() {
     --without-lzma \
     --with-zstd \
     --without-bzip2 \
-    --enable-threads=windows || exit 1
+    --enable-threads=windows \
+    ac_cv_func_malloc_0_nonnull=yes \
+    ac_cv_func_realloc_0_nonnull=yes || exit 1
 
-  # 【修复】：不要修改 Makefile，改源码即可
   # Winsock 补丁
   sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#include <pthread.h>\n#endif' tests/libtest.c
   sed -i 's/int flags = fcntl(client_fd, F_GETFL, 0);/#ifdef _WIN32\n\t\tunsigned long mode = 1;\n\t\tioctlsocket(client_fd, FIONBIO, \&mode);\n#else\n\t\tint flags = fcntl(client_fd, F_GETFL, 0);/' tests/libtest.c
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
   
-  # 【关键】：在 make 命令中直接指定 SUBDIRS
-  # 这样 Make 只会进入 lib, src 和 include 目录，跳过 examples 和 tests
+  # 【关键修正】指定正确的编译目录顺序：lib -> include -> libwget -> src
+  # 这样 libwget.la 会在编译 src 之前生成
   FULL_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS $MY_COMP_LIBS -lpsl"
   
-  echo ">>> 开始编译 wget2 (跳过 examples)..."
-  make -j$(nproc) SUBDIRS="lib src include" LIBS="$FULL_LIBS" || exit 1
+  echo ">>> 开始编译 wget2 (Modules: lib include libwget src)..."
+  make -j$(nproc) SUBDIRS="lib include libwget src" LIBS="$FULL_LIBS" || exit 1
 
   # 检查产物
   if [ -f "$INSTALLDIR/wget2/src/wget2.exe" ]; then
