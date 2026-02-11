@@ -17,12 +17,6 @@ export LDFLAGS="-L$INSTALLDIR/lib -static -s"
 export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -g0 -fno-ident"
 export CXXFLAGS="$CFLAGS"
 export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
-export LD=x86_64-w64-mingw32-ld.lld
-
-# 建立链接器软连接（如果尚未存在）
-if [ ! -f /usr/bin/x86_64-w64-mingw32-ld.lld ]; then
-    ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
-fi
 
 mkdir -p $INSTALLDIR
 
@@ -161,7 +155,7 @@ build_wget2() {
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
   LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl $MY_BASE_LIBS" \
   LIBPCRE2_CFLAGS="-I$INSTALLDIR/include" \
-  LIBPCRE2_LIBS="-L$INSTALLDIR/lib -lpcre2-8" \
+  LIBPCRE2_LIBS="-L$INSTALLDIR/lib -Wl,-Bstatic -lpcre2-8 -Wl,-Bdynamic"
   ./configure \
     --build=x86_64-pc-linux-gnu \
     --host=$PREFIX \
