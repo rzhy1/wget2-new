@@ -1,5 +1,5 @@
 #!/bin/bash
-# wget2 build script for Windows environment
+# wget2 build script for Windows environment (Split Build / Fixed)
 # Author: rzhy1
 # 2025/10/3
 
@@ -11,8 +11,7 @@ export PKG_CONFIG_LIBDIR="$INSTALLDIR/lib/pkgconfig"
 export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
 export CPPFLAGS="-I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
 
-# [重点修改 1] 彻底删除了 -flto 和 -fvisibility=hidden
-# 在 MinGW 静态链接复杂依赖链时，这两个参数是万恶之源
+# LDFLAGS 中包含基础链接参数
 export LDFLAGS="-L$INSTALLDIR/lib -static -s"
 export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -g0"
 export CXXFLAGS="$CFLAGS"
@@ -29,6 +28,7 @@ download_deps() {
   cd "$HOME/deps"
 
   rm -f wget2-deps.tar.zst
+  # 请确保该下载链接有效且 tar 包内结构正确
   curl -L -o wget2-deps.tar.zst \
     https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
 
@@ -41,9 +41,7 @@ download_deps() {
     unzstd -c wget2-deps.tar.zst | tar -xf - -C "$HOME/usr/local/$PREFIX"
   fi
 
-  echo ">>> 依赖解压完成，校验目录："
-  ls -lh "$INSTALLDIR/lib" | head -n 30
-
+  echo ">>> 依赖解压完成"
   cd "$INSTALLDIR" || { echo "❌ $INSTALLDIR 不存在"; exit 1; }
 }
 
@@ -144,34 +142,29 @@ build_wget2() {
   if [ -d "gnulib" ]; then rm -rf gnulib; fi
   git clone --depth=1 https://github.com/coreutils/gnulib.git
   ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
+
+  # 【核心修改】
+  # 1. 移除全局导出的 LIBS，避免污染 configure 的特性检测。
+  # 2. 将依赖库通过各自的 *_LIBS 变量传递。
+  # 3. 将通用系统库和 LDFLAGS 整合。
   
-  # [重点修改 2] 定义完整的静态依赖链
-  # 我们不依赖 configure 的自动检测，而是强制通过 LIBS 变量传递给链接器
-  # 这样确保了这些库一定会出现在 link command 的最后面
-  
-  # SSL 和 Crypto 依赖 (顺序严格：gnutls -> hogweed -> nettle -> gmp)
-  MY_SSL_LIBS="-lgnutls -lhogweed -lnettle -lgmp"
-  
-  # 基础依赖库 (idn2 -> unistring/iconv)
+  # 依赖组件定义
+  MY_SSL_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp"
   MY_BASE_LIBS="-ltasn1 -lidn2 -lunistring -liconv"
+  MY_SYS_LIBS="-lbcrypt -lncrypt -lws2_32 -lcrypt32 -lsecur32 -luser32 -lkernel32 -lwinpthread"
+  MY_COMP_LIBS="-lzstd -lbrotlidec -lbrotlicommon -lz"
   
-  # Windows 系统库 (ws2_32用于网络, crypt32/bcrypt/ncrypt用于加密)
-  MY_SYS_LIBS="-lbcrypt -lncrypt -lws2_32 -lcrypt32 -lsecur32 -luser32 -lkernel32"
+  # 注意：这里我们通过 LDFLAGS 确保静态链接行为，
+  # 并通过特定的变量告诉 configure 如何链接特定模块，而不是把所有东西塞进 LIBS。
   
-  # 压缩库
-  MY_COMP_LIBS="-lzstd -lbrotlidec -lbrotlicommon -lz -lpcre2-8"
+  export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
 
-  # [重点修改 3] 将所有内容塞入 LIBS 环境变量
-  # 这就像是一个核武器选项，强制链接器看到这些库
-  export LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS $MY_COMP_LIBS -lpsl -lwinpthread"
-
-  # 我们依然设置 specific vars 以防万一，但 LIBS 是保底
   GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
   GNUTLS_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS" \
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
   LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl $MY_BASE_LIBS" \
   LIBPCRE2_CFLAGS="-I$INSTALLDIR/include" \
-  LIBPCRE2_LIBS="-L$INSTALLDIR/lib -lpcre2-8"  \
+  LIBPCRE2_LIBS="-L$INSTALLDIR/lib -lpcre2-8" \
   ./configure \
     --build=x86_64-pc-linux-gnu \
     --host=$PREFIX \
@@ -187,7 +180,10 @@ build_wget2() {
     --without-lzma \
     --with-zstd \
     --without-bzip2 \
-    --enable-threads=windows || exit 1
+    --enable-threads=windows \
+    LIBS="$MY_SYS_LIBS $MY_COMP_LIBS" || exit 1
+    # 上面这行 LIBS 仅作为补充，用于传递 configure 无法通过 PKG_CONFIG 自动找到的底层库（如系统库）
+    # 但不要包含像 gnutls 这样需要精确检测的库
 
   # Winsock 补丁
   sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#include <pthread.h>\n#endif' tests/libtest.c
@@ -210,7 +206,7 @@ build_zlib-ng &
 build_PCRE2 &
 wait
 
-# 单独编译 libpsl，防止并发问题
+# 单独编译 libpsl
 build_libpsl 
 
 # 最后编译 wget2
