@@ -1,5 +1,5 @@
 #!/bin/bash
-# wget2 build script for Windows environment (Split Build / Fixed)
+# wget2 build script for Windows environment (Skip Examples Fix)
 # Author: rzhy1
 # 2025/10/3
 
@@ -11,15 +11,19 @@ export PKG_CONFIG_LIBDIR="$INSTALLDIR/lib/pkgconfig"
 export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
 export CPPFLAGS="-I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
 
-# LDFLAGS 中包含基础链接参数
+# LDFLAGS: 强制静态链接
 export LDFLAGS="-L$INSTALLDIR/lib -static -s"
-export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -g0"
+# CFLAGS: 优化参数
+export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -g0 -fno-ident"
 export CXXFLAGS="$CFLAGS"
 export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
 export LD=x86_64-w64-mingw32-ld.lld
-ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
 
-# 确保目录存在
+# 建立链接器软连接（如果尚未存在）
+if [ ! -f /usr/bin/x86_64-w64-mingw32-ld.lld ]; then
+    ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
+fi
+
 mkdir -p $INSTALLDIR
 
 download_deps() { 
@@ -28,7 +32,7 @@ download_deps() {
   cd "$HOME/deps"
 
   rm -f wget2-deps.tar.zst
-  # 请确保该下载链接有效且 tar 包内结构正确
+  # 请确保该下载链接有效
   curl -L -o wget2-deps.tar.zst \
     https://github.com/rzhy1/wget2-new/releases/download/wget2-deps/wget2-deps.tar.zst
 
@@ -143,22 +147,23 @@ build_wget2() {
   git clone --depth=1 https://github.com/coreutils/gnulib.git
   ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
 
-  # 【核心修改】
-  # 1. 移除全局导出的 LIBS，避免污染 configure 的特性检测。
-  # 2. 将依赖库通过各自的 *_LIBS 变量传递。
-  # 3. 将通用系统库和 LDFLAGS 整合。
-  
-  # 依赖组件定义
+  # 定义库链
+  # 1. SSL/Crypto 核心链 (GnuTLS -> Hogweed -> Nettle -> GMP)
   MY_SSL_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp"
+  # 2. 基础功能链
   MY_BASE_LIBS="-ltasn1 -lidn2 -lunistring -liconv"
+  # 3. 系统底层链 (Windows API + Pthreads)
   MY_SYS_LIBS="-lbcrypt -lncrypt -lws2_32 -lcrypt32 -lsecur32 -luser32 -lkernel32 -lwinpthread"
+  # 4. 压缩链
   MY_COMP_LIBS="-lzstd -lbrotlidec -lbrotlicommon -lz"
-  
-  # 注意：这里我们通过 LDFLAGS 确保静态链接行为，
-  # 并通过特定的变量告诉 configure 如何链接特定模块，而不是把所有东西塞进 LIBS。
-  
-  export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
 
+  # 设置 LDFLAGS 确保静态
+  export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -static"
+
+  # 配置 Configure
+  # 我们不通过 LIBS 全局传参，而是通过专门的变量传给 configure
+  # 并最终在 make 阶段通过修改 LIBS 补全缺失的链接
+  
   GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
   GNUTLS_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS" \
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
@@ -180,19 +185,35 @@ build_wget2() {
     --without-lzma \
     --with-zstd \
     --without-bzip2 \
-    --enable-threads=windows \
-    LIBS="$MY_SYS_LIBS $MY_COMP_LIBS" || exit 1
-    # 上面这行 LIBS 仅作为补充，用于传递 configure 无法通过 PKG_CONFIG 自动找到的底层库（如系统库）
-    # 但不要包含像 gnutls 这样需要精确检测的库
+    --enable-threads=windows || exit 1
 
-  # Winsock 补丁
+  # 【关键修正 1】: 强制修改 Makefile，移除 examples 和 tests 目录
+  # 这些目录的静态链接非常容易失败，而你只需要 src 里的 wget2.exe
+  echo ">>> 修改 Makefile 跳过 examples/tests/doc..."
+  sed -i 's/SUBDIRS = lib src include docs examples unit-tests tests fuzz/SUBDIRS = lib src include/' Makefile
+  sed -i 's/SUBDIRS = .*/SUBDIRS = lib src include/' Makefile
+
+  # 【关键修正 2】: 补丁源代码以适应 Windows
   sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#include <pthread.h>\n#endif' tests/libtest.c
   sed -i 's/int flags = fcntl(client_fd, F_GETFL, 0);/#ifdef _WIN32\n\t\tunsigned long mode = 1;\n\t\tioctlsocket(client_fd, FIONBIO, \&mode);\n#else\n\t\tint flags = fcntl(client_fd, F_GETFL, 0);/' tests/libtest.c
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
   
-  make -j$(nproc) || exit 1
-  strip $INSTALLDIR/wget2/src/wget2.exe || exit 1
-  cp -fv "$INSTALLDIR/wget2/src/wget2.exe" "${GITHUB_WORKSPACE}" || exit 1
+  # 【关键修正 3】: 编译主程序
+  # 为了防止 src/wget2.exe 链接时也找不到 SSL，我们将所有库显式传递给 make
+  # 这比传递给 configure 更安全，不会破坏 configure 的检测逻辑
+  FULL_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS $MY_COMP_LIBS -lpsl"
+  
+  make -j$(nproc) LIBS="$FULL_LIBS" || exit 1
+
+  # 检查产物
+  if [ -f "$INSTALLDIR/wget2/src/wget2.exe" ]; then
+      echo "✅ 编译成功！"
+      strip $INSTALLDIR/wget2/src/wget2.exe
+      cp -fv "$INSTALLDIR/wget2/src/wget2.exe" "${GITHUB_WORKSPACE}"
+  else
+      echo "❌ 编译失败：未找到 wget2.exe"
+      exit 1
+  fi
 }
 
 # 流程执行
