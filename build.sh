@@ -140,29 +140,29 @@ build_wget2() {
   git clone --depth=1 https://github.com/coreutils/gnulib.git
   ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
 
-  # ---------- 1. 彻底清除旧版 GnuTLS（来自预下载依赖）----------
-  echo ">>> 清除旧版 GnuTLS 库和 pc 文件，确保链接器找到新版"
-  rm -vf "$INSTALLDIR/lib"/libgnutls*
-  rm -vf "$INSTALLDIR/lib/pkgconfig/gnutls.pc"
-  # 如果新版 GnuTLS 安装在别处，请确保 INSTALLDIR 指向正确位置
-
-  # ---------- 2. PCRE2 强制静态链接（删除导入库）----------
+  # ---------- 1. PCRE2 强制静态链接（删除导入库，避免 .dll.a 优先）----------
   export LIBPCRE2_CFLAGS="-I$INSTALLDIR/include"
   export LIBPCRE2_LIBS="-L$INSTALLDIR/lib -Wl,-Bstatic -lpcre2-8 -Wl,-Bdynamic"
   rm -f "$INSTALLDIR/lib"/libpcre2*.dll.a
 
-  # ---------- 3. GnuTLS 强制静态链接（包裹所有依赖）----------
-  export GNUTLS_CFLAGS="-I$INSTALLDIR/include"
-  export GNUTLS_LIBS="-L$INSTALLDIR/lib -Wl,-Bstatic -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lunistring -liconv -Wl,-Bdynamic"
+  # ---------- 2. 通过 pkg-config 获取 GnuTLS 的静态链接参数（请确保新版 GnuTLS 的 .pc 文件在 PKG_CONFIG_PATH 中）----------
+  if ! $PKG_CONFIG --exists gnutls; then
+    echo "❌ 错误：pkg-config 找不到 gnutls.pc"
+    echo "请确保新版 GnuTLS（≥3.8.0）已安装，并且其 .pc 文件路径已添加到 PKG_CONFIG_PATH"
+    echo "当前 PKG_CONFIG_PATH = $PKG_CONFIG_PATH"
+    exit 1
+  fi
+  export GNUTLS_CFLAGS="$($PKG_CONFIG --cflags gnutls)"
+  export GNUTLS_LIBS="$($PKG_CONFIG --libs --static gnutls) -Wl,-Bdynamic"
 
-  # ---------- 4. 其他库（系统库、压缩库）----------
+  # ---------- 3. 其他库（系统库、压缩库）----------
   MY_SYS_LIBS="-lbcrypt -lncrypt -lws2_32 -lcrypt32 -lsecur32 -luser32 -lkernel32 -lwinpthread"
   MY_COMP_LIBS="-lzstd -lbrotlidec -lbrotlicommon -lz"
 
   export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -static"
   export CPPFLAGS="$CPPFLAGS -I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
 
-  # ---------- 5. 配置 ----------
+  # ---------- 4. 配置 ----------
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
   LIBPSL_LIBS="-L$INSTALLDIR/lib -Wl,-Bstatic -lpsl -lidn2 -lunistring -liconv -Wl,-Bdynamic" \
   ./configure \
@@ -184,12 +184,12 @@ build_wget2() {
     ac_cv_func_malloc_0_nonnull=yes \
     ac_cv_func_realloc_0_nonnull=yes || exit 1
 
-  # ---------- 6. Winsock 补丁 ----------
+  # ---------- 5. Winsock 补丁 ----------
   sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#include <pthread.h>\n#endif' tests/libtest.c
   sed -i 's/int flags = fcntl(client_fd, F_GETFL, 0);/#ifdef _WIN32\n\t\tunsigned long mode = 1;\n\t\tioctlsocket(client_fd, FIONBIO, \&mode);\n#else\n\t\tint flags = fcntl(client_fd, F_GETFL, 0);/' tests/libtest.c
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
 
-  # ---------- 7. 完整链接库 ----------
+  # ---------- 6. 完整链接库 ----------
   FULL_LIBS="$GNUTLS_LIBS $MY_SYS_LIBS $MY_COMP_LIBS -lpsl -lpcre2-8"
 
   echo ">>> 步骤 1/4: 编译 lib (Gnulib)"
@@ -204,7 +204,7 @@ build_wget2() {
   echo ">>> 步骤 4/4: 编译 src (wget2.exe)"
   make -C src -j$(nproc) LIBS="$FULL_LIBS" || exit 1
 
-  # ---------- 8. 检查产物（修正路径）----------
+  # ---------- 7. 检查产物 ----------
   if [ -f "src/wget2.exe" ]; then
       echo "✅ 编译成功！"
       strip src/wget2.exe
