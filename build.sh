@@ -11,11 +11,11 @@ export PKG_CONFIG_LIBDIR="$INSTALLDIR/lib/pkgconfig"
 export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
 export CPPFLAGS="-I$INSTALLDIR/include"
 export LDFLAGS="-L$INSTALLDIR/lib -static -s -flto=$(nproc)"
-export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -flto=$(nproc) -g0 -fvisibility=hidden"
+export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -flto=$(nproc) -g0 -fvisibility=hidden -Wno-attributes -Wno-inline -Wno-pointer-to-int-cast -Wno-return-local-addr"
 export CXXFLAGS="$CFLAGS"
 export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
-export LD=x86_64-w64-mingw32-ld.lld
-ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
+#export LD=x86_64-w64-mingw32-ld.lld
+#ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
 # 当前路径是：/__w/wget2-windows/wget2-windows
 # INSTALLDIR是：/github/home/usr/local/x86_64-w64-mingw32
 
@@ -155,19 +155,34 @@ build_wget2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build wget2⭐⭐⭐⭐⭐⭐" 
   git clone https://gitlab.com/gnuwget/wget2.git || exit 1
   cd wget2 || exit 1
-  if [ -d "gnulib" ]; then
-      rm -rf gnulib
-  fi
+  rm -rf gnulib
   git clone --depth=1 https://github.com/coreutils/gnulib.git
   ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
-  export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
-  export CPPFLAGS="-I$INSTALLDIR/include -DNGHTTP2_STATICLIB"
-  GNUTLS_CFLAGS=$CFLAGS \
-  GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lbcrypt -lncrypt" \
-  LIBPSL_CFLAGS=$CFLAGS \
+
+  # ========== 应用源码补丁，修复已知警告 ==========
+  # 1. blacklist.c: 修复返回局部变量地址（第156行）
+  if grep -q "return fname;" src/blacklist.c; then
+    echo ">>> 应用 blacklist.c 补丁"
+    sed -i 's/char tmp\[1024\];/static char tmp[1024];/' src/blacklist.c
+  fi
+
+  # 2. css.c / css_tokenizer.c: 匹配 yyalloc/yyrealloc 签名
+  if grep -q "void \*yyalloc(size_t size)" libwget/css.c; then
+    echo ">>> 应用 css.c 补丁"
+    sed -i 's/void \*yyalloc(size_t size)/void \*yyalloc(size_t size, void *yyscanner)/' libwget/css.c
+    sed -i 's/void \*yyrealloc(void \*p, size_t size)/void \*yyrealloc(void \*p, size_t size, void *yyscanner)/' libwget/css.c
+  fi
+
+  # ========== 配置编译 ==========
+  export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib"
+  export CPPFLAGS="$CPPFLAGS -I$INSTALLDIR/include"
+
+  GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
+  GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lunistring -liconv -lbcrypt -lncrypt -lws2_32 -lcrypt32 -lsecur32 -luser32 -lkernel32 -lwinpthread" \
+  LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
   LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl" \
-  LIBPCRE2_CFLAGS=$CFLAGS \
-  LIBPCRE2_LIBS="-L$INSTALLDIR/lib -lpcre2-8"  \
+  LIBPCRE2_CFLAGS="-I$INSTALLDIR/include" \
+  LIBPCRE2_LIBS="-L$INSTALLDIR/lib -lpcre2-8" \
   ./configure \
     --build=x86_64-pc-linux-gnu \
     --host=$PREFIX \
@@ -184,12 +199,24 @@ build_wget2() {
     --with-zstd \
     --without-bzip2 \
     --enable-threads=windows
+
+  # Winsock 补丁（测试代码）
   sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#include <pthread.h>\n#endif' tests/libtest.c
   sed -i 's/int flags = fcntl(client_fd, F_GETFL, 0);/#ifdef _WIN32\n\t\tunsigned long mode = 1;\n\t\tioctlsocket(client_fd, FIONBIO, \&mode);\n#else\n\t\tint flags = fcntl(client_fd, F_GETFL, 0);/' tests/libtest.c
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
-  make -j$(nproc)  || exit 1
-  strip $INSTALLDIR/wget2/src/wget2.exe || exit 1
-  cp -fv "$INSTALLDIR/wget2/src/wget2.exe" "${GITHUB_WORKSPACE}" || exit 1
+
+  # 编译
+  make -j$(nproc) || exit 1
+
+  # 检查并复制产物
+  if [ -f "src/wget2.exe" ]; then
+    strip src/wget2.exe
+    cp -fv src/wget2.exe "${GITHUB_WORKSPACE:-.}"
+    echo "✅ wget2.exe 编译成功！"
+  else
+    echo "❌ 编译失败：未找到 wget2.exe"
+    exit 1
+  fi
 }
 download_deps
 wait
