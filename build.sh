@@ -1,5 +1,5 @@
 #!/bin/bash
-# wget2 build script for Windows environment (Skip Examples Fix)
+# wget2 build script for Windows environment (Fixed: Make Params)
 # Author: rzhy1
 # 2025/10/3
 
@@ -148,22 +148,15 @@ build_wget2() {
   ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
 
   # 定义库链
-  # 1. SSL/Crypto 核心链 (GnuTLS -> Hogweed -> Nettle -> GMP)
   MY_SSL_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp"
-  # 2. 基础功能链
   MY_BASE_LIBS="-ltasn1 -lidn2 -lunistring -liconv"
-  # 3. 系统底层链 (Windows API + Pthreads)
   MY_SYS_LIBS="-lbcrypt -lncrypt -lws2_32 -lcrypt32 -lsecur32 -luser32 -lkernel32 -lwinpthread"
-  # 4. 压缩链
   MY_COMP_LIBS="-lzstd -lbrotlidec -lbrotlicommon -lz"
 
   # 设置 LDFLAGS 确保静态
   export LDFLAGS="$LDFLAGS -L$INSTALLDIR/lib -static"
 
   # 配置 Configure
-  # 我们不通过 LIBS 全局传参，而是通过专门的变量传给 configure
-  # 并最终在 make 阶段通过修改 LIBS 补全缺失的链接
-  
   GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
   GNUTLS_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS" \
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
@@ -187,23 +180,18 @@ build_wget2() {
     --without-bzip2 \
     --enable-threads=windows || exit 1
 
-  # 【关键修正 1】: 强制修改 Makefile，移除 examples 和 tests 目录
-  # 这些目录的静态链接非常容易失败，而你只需要 src 里的 wget2.exe
-  echo ">>> 修改 Makefile 跳过 examples/tests/doc..."
-  sed -i 's/SUBDIRS = lib src include docs examples unit-tests tests fuzz/SUBDIRS = lib src include/' Makefile
-  sed -i 's/SUBDIRS = .*/SUBDIRS = lib src include/' Makefile
-
-  # 【关键修正 2】: 补丁源代码以适应 Windows
+  # 【修复】：不要修改 Makefile，改源码即可
+  # Winsock 补丁
   sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#include <pthread.h>\n#endif' tests/libtest.c
   sed -i 's/int flags = fcntl(client_fd, F_GETFL, 0);/#ifdef _WIN32\n\t\tunsigned long mode = 1;\n\t\tioctlsocket(client_fd, FIONBIO, \&mode);\n#else\n\t\tint flags = fcntl(client_fd, F_GETFL, 0);/' tests/libtest.c
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
   
-  # 【关键修正 3】: 编译主程序
-  # 为了防止 src/wget2.exe 链接时也找不到 SSL，我们将所有库显式传递给 make
-  # 这比传递给 configure 更安全，不会破坏 configure 的检测逻辑
+  # 【关键】：在 make 命令中直接指定 SUBDIRS
+  # 这样 Make 只会进入 lib, src 和 include 目录，跳过 examples 和 tests
   FULL_LIBS="$MY_SSL_LIBS $MY_BASE_LIBS $MY_SYS_LIBS $MY_COMP_LIBS -lpsl"
   
-  make -j$(nproc) LIBS="$FULL_LIBS" || exit 1
+  echo ">>> 开始编译 wget2 (跳过 examples)..."
+  make -j$(nproc) SUBDIRS="lib src include" LIBS="$FULL_LIBS" || exit 1
 
   # 检查产物
   if [ -f "$INSTALLDIR/wget2/src/wget2.exe" ]; then
