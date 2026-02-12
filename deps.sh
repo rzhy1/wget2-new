@@ -19,12 +19,65 @@ ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
 # 当前路径是：/__w/wget2-windows/wget2-windows
 # INSTALLDIR是：/github/home/usr/local/x86_64-w64-mingw32
 
+# --- 镜像自动测速选择 ---
+select_fastest_gnu_mirror() {
+    local candidates=(
+        "https://mirrors.aliyun.com/gnu"
+        "https://ftp.gnu.org/gnu"
+        "http://mirrors.kernel.org/gnu"
+    )
+    local fastest_url=""
+    local fastest_time=999
+    local tmp_time
+    
+    echo "[测速] 正在测试 GNU 镜像响应速度..." >&2
+    for mirror in "${candidates[@]}"; do
+        if command -v curl &>/dev/null; then
+            tmp_time=$(curl -o /dev/null -s -w '%{time_total}' --connect-timeout 3 --max-time 5 "${mirror}/" 2>/dev/null)
+        elif command -v wget &>/dev/null; then
+            tmp_time=$(wget --spider --timeout=3 --tries=1 -O /dev/null "${mirror}/" 2>&1 | grep -oE '[0-9.]+' | tail -1)
+        else
+            echo "错误: 需要 curl 或 wget" >&2
+            return 1
+        fi
+        
+        if [ -n "$tmp_time" ] && [ "$tmp_time" != "0" ]; then
+            printf "  %-40s %.3f 秒\n" "${mirror}" "${tmp_time}" >&2
+            if (( $(echo "$tmp_time < $fastest_time" | bc -l 2>/dev/null) )) || [ -z "$fastest_url" ]; then
+                fastest_time=$tmp_time
+                fastest_url=$mirror
+            fi
+        else
+            printf "  %-40s 失败\n" "${mirror}" >&2
+        fi
+    done
+    
+    echo >&2
+    if [ -n "$fastest_url" ]; then
+        echo "[选择] 最快镜像: ${fastest_url} (${fastest_time} 秒)" >&2
+        echo "$fastest_url"
+    else
+        echo "[警告] 所有镜像均不可用，使用默认镜像 https://ftp.gnu.org/gnu" >&2
+        echo "https://ftp.gnu.org/gnu"
+    fi
+}
+
+# 检测依赖并执行测速
+if command -v bc &>/dev/null && ( command -v curl &>/dev/null || command -v wget &>/dev/null ); then
+    GNU_MIRROR=$(select_fastest_gnu_mirror)
+else
+    echo "警告: 缺少 bc 或 curl/wget，使用默认镜像 http://mirrors.kernel.org/gnu" >&2
+    GNU_MIRROR="http://mirrors.kernel.org/gnu"
+fi
+export GNU_MIRROR
+echo "使用镜像源: $GNU_MIRROR" >&2
+
 mkdir -p $INSTALLDIR
 cd $INSTALLDIR
 
 build_gmp() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gmp⭐⭐⭐⭐⭐⭐" 
-  wget -nv -O- https://mirrors.kernel.org/gnu/gmp/gmp-6.3.0.tar.xz | tar x --xz
+  wget -nv -O- ${GNU_MIRROR}/gmp/gmp-6.3.0.tar.xz | tar x --xz
   cd gmp-* || exit
   ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR"
   make -j$(nproc) || exit 1
@@ -34,7 +87,7 @@ build_gmp() {
 
 build_libiconv() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libiconv⭐⭐⭐⭐⭐⭐" 
-  wget -O- https://mirrors.kernel.org/gnu/libiconv/libiconv-1.18.tar.gz | tar xz || exit 1
+  wget -O- ${GNU_MIRROR}/libiconv/libiconv-1.18.tar.gz | tar xz || exit 1
   cd libiconv-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-nls --disable-silent-rules --prefix=$INSTALLDIR || exit 1
   make -j$(nproc) || exit 1
@@ -74,7 +127,7 @@ build_gpgme() {
 
 build_libunistring() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libunistring⭐⭐⭐⭐⭐⭐" 
-  wget -O- https://mirrors.kernel.org/gnu/libunistring/libunistring-1.4.1.tar.gz | tar xz || exit 1
+  wget -O- ${GNU_MIRROR}/libunistring/libunistring-1.4.1.tar.gz | tar xz || exit 1
   cd libunistring-* || exit 1
   ac_cv_func_nanosleep=yes \
   ./configure CFLAGS="-Os" --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static --disable-silent-rules --enable-threads=window || exit 1
@@ -85,7 +138,7 @@ build_libunistring() {
 
 build_libidn2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libidn2⭐⭐⭐⭐⭐⭐" 
-  wget -O- https://mirrors.kernel.org/gnu/libidn/libidn2-2.3.8.tar.gz | tar xz || exit 1
+  wget -O- ${GNU_MIRROR}/libidn/libidn2-2.3.8.tar.gz | tar xz || exit 1
   cd libidn2-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX  --disable-shared --enable-static --disable-doc --disable-gcc-warnings --prefix=$INSTALLDIR || exit 1
   make -j$(nproc) || exit 1
@@ -95,7 +148,7 @@ build_libidn2() {
 
 build_libtasn1() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libtasn1⭐⭐⭐⭐⭐⭐"
-  wget -O- https://mirrors.kernel.org/gnu/libtasn1/libtasn1-4.21.0.tar.gz | tar xz || exit 1
+  wget -O- ${GNU_MIRROR}/libtasn1/libtasn1-4.21.0.tar.gz | tar xz || exit 1
   cd libtasn1-* || exit 1
   ./configure --host=$PREFIX --disable-shared --disable-doc --prefix="$INSTALLDIR" || exit 1
   make -j$(nproc) || exit 1
@@ -116,7 +169,7 @@ build_nghttp2() {
 
 build_libmicrohttpd() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libmicrohttpd⭐⭐⭐⭐⭐⭐" 
-  wget -O- https://mirrors.kernel.org/gnu/libmicrohttpd/libmicrohttpd-latest.tar.gz | tar xz || exit 1
+  wget -O- ${GNU_MIRROR}/libmicrohttpd/libmicrohttpd-latest.tar.gz | tar xz || exit 1
   cd libmicrohttpd-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static \
             --disable-examples --disable-doc --disable-tools --disable-silent-rules || exit 1
@@ -154,7 +207,7 @@ build_libhsts() {
 build_nettle() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build nettle⭐⭐⭐⭐⭐⭐" 
   #git clone  https://github.com/sailfishos-mirror/nettle.git || exit 1
-  wget -O- https://mirrors.kernel.org/gnu/nettle/nettle-3.10.2.tar.gz | tar xz || exit 1
+  wget -O- ${GNU_MIRROR}/nettle/nettle-3.10.2.tar.gz | tar xz || exit 1
   cd nettle-* || exit 1
   bash .bootstrap || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-documentation --prefix=$INSTALLDIR --libdir=$INSTALLDIR/lib || exit 1
