@@ -23,7 +23,7 @@ jobs:
             wget curl git ca-certificates bash \
             autopoint autoconf-archive autoconf automake libtool gettext \
             mingw-w64 pkg-config-mingw-w64-x86-64 \
-            lld zstd python3
+            bc lld zstd python3
 
       - name: Compile deps
         env:
