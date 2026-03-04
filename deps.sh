@@ -127,7 +127,7 @@ build_gpgme() {
 
 build_libunistring() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libunistring⭐⭐⭐⭐⭐⭐" 
-  wget -O- ${GNU_MIRROR}/libunistring/libunistring-1.4.1.tar.gz | tar xz || exit 1
+  wget -O- ${GNU_MIRROR}/libunistring/libunistring-1.4.2.tar.gz | tar xz || exit 1
   cd libunistring-* || exit 1
   ac_cv_func_nanosleep=yes \
   ./configure CFLAGS="-Os" --build=x86_64-pc-linux-gnu --host=$PREFIX --prefix=$INSTALLDIR --disable-shared --enable-static --disable-silent-rules --enable-threads=window || exit 1
