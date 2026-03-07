@@ -3,7 +3,7 @@ Wget2 for Windows
 | library       | Version  | Source              |
 |---------------| ---------------------|-----------------------|
 | gnulib-mirror | Git    | [https://git.savannah.gnu.org/git/gnulib.git](https://git.savannah.gnu.org/git/gnulib.git)  |
-| libiconv      | 1.18   | [https://ftp.gnu.org/gnu/libiconv/libiconv-1.18.tar.gz](https://ftp.gnu.org/gnu/libiconv/libiconv-1.18.tar.gz)  |
+| libiconv      | 1.19   | [https://ftp.gnu.org/gnu/libiconv/libiconv-1.19.tar.gz](https://ftp.gnu.org/gnu/libiconv/libiconv-1.19.tar.gz)  |
 | libunistring  | 1.4.2  | [https://ftp.gnu.org/gnu/libunistring/libunistring-1.4.2.tar.gz](https://ftp.gnu.org/gnu/libunistring/libunistring-1.4.2.tar.gz) |
 | libidn2       | 2.3.8  | [https://mirrors.ustc.edu.cn/gnu/libidn/libidn2-2.3.8.tar.gz](https://mirrors.ustc.edu.cn/gnu/libidn/libidn2-2.3.8.tar.gz) |
 | libpsl        | Git    | [https://github.com/rockdaboot/libpsl.git](https://github.com/rockdaboot/libpsl.git)  |
