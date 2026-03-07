@@ -87,7 +87,7 @@ build_gmp() {
 
 build_libiconv() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libiconv⭐⭐⭐⭐⭐⭐" 
-  wget -O- ${GNU_MIRROR}/libiconv/libiconv-1.18.tar.gz | tar xz || exit 1
+  wget -O- ${GNU_MIRROR}/libiconv/libiconv-1.19.tar.gz | tar xz || exit 1
   cd libiconv-* || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-nls --disable-silent-rules --prefix=$INSTALLDIR || exit 1
   make -j$(nproc) || exit 1
