@@ -207,7 +207,7 @@ build_libhsts() {
 build_nettle() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build nettle⭐⭐⭐⭐⭐⭐" 
   #git clone  https://github.com/sailfishos-mirror/nettle.git || exit 1
-  wget -O- ${GNU_MIRROR}/nettle/nettle-3.10.2.tar.gz | tar xz || exit 1
+  wget -O- ${GNU_MIRROR}/nettle/nettle-4.0.tar.gz | tar xz || exit 1
   cd nettle-* || exit 1
   bash .bootstrap || exit 1
   ./configure --build=x86_64-pc-linux-gnu --host=$PREFIX --disable-shared --enable-static --disable-documentation --prefix=$INSTALLDIR --libdir=$INSTALLDIR/lib || exit 1
@@ -220,6 +220,11 @@ build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
   wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz
       cd gnutls-* || exit
+      
+      # 下载并应用 Nettle 4.0 兼容性补丁
+      echo "Applying Nettle 4.0 compatibility patch..."
+      wget -q -O- https://www.linuxfromscratch.org/patches/blfs/svn/gnutls-3.8.12-nettle4_fixes-1.patch | patch -Np1
+      
       LIBS="-lwinpthread" \
       ac_cv_func_nanosleep='yes' \
       gl_cv_func_nanosleep='yes' \
