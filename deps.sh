@@ -218,12 +218,12 @@ build_nettle() {
 
 build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
-  wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.12.tar.xz | tar x --xz
+  wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.13.tar.xz | tar x --xz
       cd gnutls-* || exit
       
       # 下载并应用 Nettle 4.0 兼容性补丁
-      echo "Applying Nettle 4.0 compatibility patch..."
-      wget -q -O- https://www.linuxfromscratch.org/patches/blfs/svn/gnutls-3.8.12-nettle4_fixes-1.patch | patch -Np1
+      #echo "Applying Nettle 4.0 compatibility patch..."
+      #wget -q -O- https://www.linuxfromscratch.org/patches/blfs/svn/gnutls-3.8.12-nettle4_fixes-1.patch | patch -Np1
       
       LIBS="-lwinpthread" \
       ac_cv_func_nanosleep='yes' \
