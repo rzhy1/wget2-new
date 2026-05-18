@@ -156,7 +156,7 @@ build_wget2() {
   git clone --recursive --depth=1 https://gitlab.com/gnuwget/wget2.git || exit 1
   cd wget2 || exit 1
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' lib/Makefile.am
-  AUTOPOINT=true ./bootstrap --skip-po || exit 1
+  AUTOPOINT=true ./bootstrap || exit 1
 
   # ========== 应用源码补丁，修复已知警告 ==========  
   # 1. blacklist.c: 修复返回局部变量地址（第156行）
