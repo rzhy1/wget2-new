@@ -10,8 +10,8 @@ export PKG_CONFIG_PATH="$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig:$PK
 export PKG_CONFIG_LIBDIR="$INSTALLDIR/lib/pkgconfig"
 export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
 export CPPFLAGS="-I$INSTALLDIR/include"
-export LDFLAGS="-L$INSTALLDIR/lib -static -s -flto=$(nproc)"
-export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -flto=$(nproc) -g0 -fvisibility=hidden -Wno-attributes -Wno-inline -Wno-pointer-to-int-cast -Wno-return-local-addr"
+export LDFLAGS="-L$INSTALLDIR/lib -static -s -flto"
+export CFLAGS="-march=x86-64-v3 -Os -pipe -flto= -g0 -fvisibility=hidden -Wno-attributes -Wno-inline -Wno-pointer-to-int-cast -Wno-return-local-addr"
 export CXXFLAGS="$CFLAGS"
 export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
 #export LD=x86_64-w64-mingw32-ld.lld
@@ -153,13 +153,10 @@ build_libpsl() {
 
 build_wget2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build wget2⭐⭐⭐⭐⭐⭐" 
-  git clone https://gitlab.com/gnuwget/wget2.git || exit 1
+  git clone --recursive --depth=1 https://gitlab.com/gnuwget/wget2.git || exit 1
   cd wget2 || exit 1
-  git submodule update --init --recursive || exit 1
-  rm -rf gnulib || exit 1
-  git clone --depth=1 https://github.com/coreutils/gnulib.git || exit 1
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' lib/Makefile.am
-  ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
+  AUTOPOINT=true ./bootstrap --skip-po || exit 1
 
   # ========== 应用源码补丁，修复已知警告 ==========  
   # 1. blacklist.c: 修复返回局部变量地址（第156行）
@@ -197,7 +194,6 @@ build_wget2() {
     --enable-year2038 \
     --with-zlib \
     --with-lzip \
-    --without-lzma \
     --with-zstd \
     --without-bzip2 \
     --enable-threads=windows
@@ -212,7 +208,7 @@ build_wget2() {
 
   # 检查并复制产物
   if [ -f "src/wget2.exe" ]; then
-    strip src/wget2.exe
+    ${PREFIX}-strip src/wget2.exe
     cp -fv src/wget2.exe "${GITHUB_WORKSPACE:-.}"
     echo "✅ wget2.exe 编译成功！"
   else
