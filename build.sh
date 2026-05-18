@@ -10,7 +10,7 @@ export PKG_CONFIG_PATH="$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig:$PK
 export PKG_CONFIG_LIBDIR="$INSTALLDIR/lib/pkgconfig"
 export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
 export CPPFLAGS="-I$INSTALLDIR/include"
-export LDFLAGS="-L$INSTALLDIR/lib -static -s -flto"
+export LDFLAGS="-L$INSTALLDIR/lib -static -s"
 export CFLAGS="-march=x86-64-v3 -Os -pipe -flto -g0 -fvisibility=hidden -Wno-attributes -Wno-inline -Wno-pointer-to-int-cast -Wno-return-local-addr"
 export CXXFLAGS="$CFLAGS"
 export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
@@ -158,7 +158,7 @@ build_wget2() {
   rm -rf gnulib
   git clone --depth=1 https://github.com/coreutils/gnulib.git
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' lib/Makefile.am
-  ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
+  AUTOPOINT=true ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
 
   # ========== 应用源码补丁，修复已知警告 ==========  
   # 1. blacklist.c: 修复返回局部变量地址（第156行）
@@ -206,6 +206,7 @@ build_wget2() {
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
 
   # 编译
+  export LDFLAGS="$LDFLAGS_BASE -flto" 
   make -j$(nproc) || exit 1
 
   # 检查并复制产物
