@@ -28,7 +28,7 @@ jobs:
             autopoint autoconf automake libtool gettext texinfo flex lzip \
             mingw-w64 pkg-config-mingw-w64-x86-64 \
             python3-venv meson ninja-build cmake \
-            bc lld zstd
+            bc lld zstd gperf
       - name: Compile
         env:
           CROSS_HOST: "x86_64-w64-mingw32"
