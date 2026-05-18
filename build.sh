@@ -155,11 +155,13 @@ build_wget2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build wget2⭐⭐⭐⭐⭐⭐" 
   git clone https://gitlab.com/gnuwget/wget2.git || exit 1
   cd wget2 || exit 1
-  rm -rf gnulib
-  git clone --depth=1 https://github.com/coreutils/gnulib.git
+  git submodule update --init --recursive || exit 1
+  rm -rf gnulib || exit 1
+  git clone --depth=1 https://github.com/coreutils/gnulib.git || exit 1
+  sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' lib/Makefile.am
   ./bootstrap --skip-po --gnulib-srcdir=gnulib || exit 1
 
-  # ========== 应用源码补丁，修复已知警告 ==========
+  # ========== 应用源码补丁，修复已知警告 ==========  
   # 1. blacklist.c: 修复返回局部变量地址（第156行）
   if grep -q "return fname;" src/blacklist.c; then
     echo ">>> 应用 blacklist.c 补丁"
