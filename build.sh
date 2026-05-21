@@ -220,8 +220,9 @@ build_wget2() {
   fi
 }
 download_deps
-build_brotli
-build_zstd
-build_zlib-ng
-build_PCRE2
+build_brotli &
+build_zstd &
+build_zlib-ng &
+build_PCRE2 &
+wait
 build_wget2
