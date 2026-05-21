@@ -206,7 +206,7 @@ build_wget2() {
   sed -i '/fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);/a #endif' tests/libtest.c
 
   # 编译
-  export LDFLAGS="$LDFLAGS_BASE -flto" 
+  export LDFLAGS="$LDFLAGS -flto"
   make -j$(nproc) || exit 1
 
   # 检查并复制产物
@@ -220,10 +220,8 @@ build_wget2() {
   fi
 }
 download_deps
-wait
-build_brotli &
-build_zstd &
-build_zlib-ng &
-build_PCRE2 &
-wait
+build_brotli
+build_zstd
+build_zlib-ng
+build_PCRE2
 build_wget2
