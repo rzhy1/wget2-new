@@ -1,7 +1,9 @@
 #!/bin/bash
 # wget2 build script for Windows environment
 # Author: rzhy1
-# 2025/10/3
+# 2026/6/7
+
+set -euo pipefail
 
 # 设置环境变量
 export PREFIX="x86_64-w64-mingw32"
@@ -14,10 +16,7 @@ export LDFLAGS="-L$INSTALLDIR/lib -static -s"
 export CFLAGS="-march=x86-64-v3 -Os -pipe -flto -g0 -fvisibility=hidden -Wno-attributes -Wno-inline -Wno-pointer-to-int-cast -Wno-return-local-addr"
 export CXXFLAGS="$CFLAGS"
 export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
-#export LD=x86_64-w64-mingw32-ld.lld
-#ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
-# 当前路径是：/__w/wget2-windows/wget2-windows
-# INSTALLDIR是：/github/home/usr/local/x86_64-w64-mingw32
+
 
 download_deps() { 
   echo ">>> 下载 wget2-deps.tar.zst"
@@ -59,14 +58,14 @@ build_brotli() {
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_BUILD_TYPE=Release || exit 1
   make -j$(nproc) install || exit 1
-  echo "显示原版libbrotlidec.pc内容"
-  cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
+  #echo "显示原版libbrotlidec.pc内容"
+  #cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
   sed -i 's/^Libs: .*/& -lbrotlicommon/' "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
   cd ../.. && rm -rf brotli
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommo结果如下⭐⭐⭐⭐⭐⭐" 
-  pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
-  echo "显示新版libbrotlidec.pc内容"
-  cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
+  #pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
+  #echo "显示新版libbrotlidec.pc内容"
+  #cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
 }
 
 build_xz() {
@@ -117,7 +116,7 @@ build_zlib-ng() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build zlib-ng⭐⭐⭐⭐⭐⭐" 
   git clone --depth=1 https://github.com/zlib-ng/zlib-ng || exit 1
   cd zlib-ng || exit 1
-  CROSS_PREFIX="x86_64-w64-mingw32-" ARCH="x86_64" CFLAGS="-Os" CC=x86_64-w64-mingw32-gcc ./configure --prefix=$INSTALLDIR --static --64 --zlib-compat || exit 1
+  ./configure --host=$PREFIX --prefix=$INSTALLDIR --static --64 --zlib-compat || exit 1
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf zlib-ng
