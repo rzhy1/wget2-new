@@ -9,7 +9,7 @@ on:
       - 'deps.sh'
 jobs:
   build_wget2_deps:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     container: ubuntu:devel
     steps:
       - name: Checkout
