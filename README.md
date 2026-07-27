@@ -14,4 +14,4 @@ Wget2 for Windows
 | PCRE2         | Git    | [https://github.com/PCRE2Project/pcre2](https://github.com/PCRE2Project/pcre2) |
 | nghttp2       | 1.67.1 | [https://github.com/nghttp2/nghttp2/releases/download/v1.67.1/nghttp2-1.67.1.tar.gz](https://github.com/nghttp2/nghttp2/releases/download/v1.67.1/nghttp2-1.67.1.tar.gz) |
 | dlfcn-win32   | Git    | [https://github.com/dlfcn-win32/dlfcn-win32.git](https://github.com/dlfcn-win32/dlfcn-win32.git)  |
-| libmicrohttpd | 1.0.2  | [https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-latest.tar.gz](https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-latest.tar.gz)  |
+| libmicrohttpd | 1.0.7  | [https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-latest.tar.gz](https://ftp.gnu.org/gnu/libmicrohttpd/libmicrohttpd-latest.tar.gz)  |
