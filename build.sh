@@ -155,6 +155,21 @@ build_wget2() {
   git clone --depth=1 https://github.com/rockdaboot/wget2.git || exit 1
   cd wget2
   git submodule update --init --recursive --depth=1 || exit 1
+  # 手动导入模块（使用 gnulib 目录作为源）
+  ./gnulib/gnulib-tool --import \
+    --dir=. \
+    --local-dir=lib \
+    --lib=libgnu \
+    --source-base=lib \
+    --m4-base=m4 \
+    --doc-base=doc \
+    --tests-base=lib/tests \
+    --aux-dir=build-aux \
+    --makefile-name=gnulib.mk \
+    --no-conditional-dependencies \
+    --no-vc-files \
+    --skip-po \
+    netdb-h nl_langinfo wcwidth
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' lib/Makefile.am || exit 1
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' tests/Makefile.am || exit 1
   ./bootstrap --skip-po || exit 1
