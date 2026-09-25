@@ -155,20 +155,50 @@ build_wget2() {
   git clone --depth=1 https://github.com/rockdaboot/wget2.git || exit 1
   cd wget2
   git submodule update --init --recursive --depth=1 || exit 1
-  echo "===== SUBMODULE ====="
-  git submodule status
-  
-  echo "===== GNULIB ====="
-  ls -la gnulib | head -30
-  
-  echo "===== GNULIB HEAD ====="
-  git -C gnulib log -1 --oneline
-  
-  echo "===== REQUIRED HEADERS ====="
-  find gnulib . -type f \( -name 'netdb.h' -o -name 'langinfo.h' -o -name 'wcwidth.h' \) -print
+  echo "===== bootstrap.conf ====="
+  grep -nE 'gnulib_modules|netdb-h|nl_langinfo|wcwidth' bootstrap.conf || true
+
+  echo "===== GNULIB VERSION ====="
+  ./gnulib/gnulib-tool --version || exit 1
+
+  echo "===== GNULIB MODULES ====="
+  for m in netdb-h nl_langinfo wcwidth; do
+    if [ -f "gnulib/modules/$m" ]; then
+      echo "FOUND: $m"
+    else
+      echo "MISSING: $m"
+    fi
+  done
+
+  echo "===== RUN BOOTSTRAP ====="
+  bash -x ./bootstrap --skip-po --gnulib-srcdir="$PWD/gnulib" \
+    2>&1 | tee bootstrap-debug.log
+
+  echo "===== BOOTSTRAP RESULT ====="
+  test ${PIPESTATUS[0]} -eq 0 || exit 1
+
+  echo "===== GENERATED GNULIB FILES ====="
+
+  echo "--- gnulib.mk ---"
+  grep -nE 'netdb|langinfo|wcwidth' gnulib.mk || true
+
+  echo "--- gnulib-cache.m4 ---"
+  grep -nE 'netdb|langinfo|wcwidth' m4/gnulib-cache.m4 || true
+
+  echo "--- lib headers/sources ---"
+  find lib -maxdepth 1 -type f \( \
+    -name 'netdb.h' \
+    -o -name 'langinfo.h' \
+    -o -name 'wcwidth.h' \
+    -o -name 'wcwidth.c' \
+  \) -print
+
+  echo "--- bootstrap actual gnulib-tool command ---"
+  grep -nE 'gnulib-tool.*--import|netdb-h|nl_langinfo|wcwidth' \
+    bootstrap-debug.log || true
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' lib/Makefile.am || exit 1
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' tests/Makefile.am || exit 1
-  ./bootstrap --skip-po || exit 1
+  # ./bootstrap --skip-po || exit 1
   echo "查询"
   ls -la lib/netdb.h lib/langinfo.h lib/wcwidth.h
 
