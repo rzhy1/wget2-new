@@ -157,6 +157,7 @@ build_wget2() {
   git submodule update --init --recursive --depth=1 || exit 1
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' lib/Makefile.am || exit 1
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' tests/Makefile.am || exit 1
+  ./bootstrap --skip-po || { echo "❌ bootstrap 失败"; exit 1; }
 
   # ========== 应用源码补丁，修复已知警告 ==========  
   # 1. blacklist.c: 修复返回局部变量地址（第156行）
@@ -177,7 +178,7 @@ build_wget2() {
   export CPPFLAGS="$CPPFLAGS -I$INSTALLDIR/include"
 
   GNUTLS_CFLAGS="-I$INSTALLDIR/include" \
-  GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lunistring -liconv -lbcrypt -lncrypt -lws2_32 -lcrypt32 -lsecur32 -luser32 -lkernel32 -lwinpthread" \
+  GNUTLS_LIBS="-L$INSTALLDIR/lib -lgnutls -lhogweed -lnettle -lgmp -ltasn1 -lidn2 -lunistring -liconv -lbcrypt -lncrypt -lcrypt32 -lsecur32 -luser32 -lkernel32 -lwinpthread" \
   LIBPSL_CFLAGS="-I$INSTALLDIR/include" \
   LIBPSL_LIBS="-L$INSTALLDIR/lib -lpsl" \
   LIBPCRE2_CFLAGS="-I$INSTALLDIR/include" \
