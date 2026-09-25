@@ -158,6 +158,8 @@ build_wget2() {
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' lib/Makefile.am || exit 1
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' tests/Makefile.am || exit 1
   ./bootstrap --skip-po || exit 1
+  echo "查询"
+  ls -la lib/netdb.h lib/langinfo.h lib/wcwidth.h
 
   # ========== 应用源码补丁，修复已知警告 ==========  
   # 1. blacklist.c: 修复返回局部变量地址（第156行）
