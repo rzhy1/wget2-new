@@ -198,6 +198,28 @@ build_wget2() {
     --with-zstd \
     --without-bzip2 \
     --enable-threads=windows
+  # ========== 修复重复的 ws2_32 链接参数 ==========
+  echo ">>> 检查并修复 ws2_32 重复链接参数"
+  for f in src/Makefile libwget/Makefile libwget/libwget.la; do
+    if [ -f "$f" ]; then
+      # 修复 -lws2_32-lws2_32
+      if grep -q "ws2_32-lws2_32" "$f"; then
+        echo "  修复 $f 中的 -lws2_32-lws2_32"
+        sed -i 's/-lws2_32-lws2_32/-lws2_32/g' "$f"
+      fi
+      # 修复重复的 -lws2_32 -lws2_32
+      if grep -q "\-lws2_32 \-lws2_32" "$f"; then
+        echo "  修复 $f 中的重复 -lws2_32"
+        sed -i 's/-lws2_32 -lws2_32/-lws2_32/g' "$f"
+      fi
+    fi
+  done
+
+  # 可选：打印修复后的相关行，便于确认
+  echo ">>> 修复后 src/Makefile 中的 ws2_32 行："
+  grep -n "ws2_32" src/Makefile || true
+  echo ">>> 修复后 libwget.la 中的 ws2_32 行："
+  grep -n "ws2_32" libwget/libwget.la || true
 
   # Winsock 补丁（测试代码）
   sed -i '/#include <config.h>/a #ifdef _WIN32\n#include <winsock2.h>\n#include <pthread.h>\n#endif' tests/libtest.c
