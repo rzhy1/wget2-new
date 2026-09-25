@@ -206,8 +206,9 @@ build_wget2() {
 
   # 编译
   export LDFLAGS="$LDFLAGS -flto"
-  make -j$(nproc) || exit 1
-
+  make -j$(nproc) -C libwget || exit 1
+  make -j$(nproc) -C src wget2.exe || exit 1
+  
   # 检查并复制产物
   if [ -f "src/wget2.exe" ]; then
     ${PREFIX}-strip src/wget2.exe
