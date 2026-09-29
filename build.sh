@@ -159,29 +159,45 @@ build_wget2() {
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' tests/Makefile.am || exit 1
   ./bootstrap --skip-po || { echo "❌ bootstrap 失败"; exit 1; }
 
-  # ========== 应用源码补丁，修复已知警告 ==========  
-  # 1. blacklist.c: 修复返回局部变量地址（第156行）
+    # ========== 应用源码补丁，修复已知兼容性问题 ==========
+
+  # 1. blacklist.c: 修复返回局部变量地址
   if grep -q "return fname;" src/blacklist.c; then
     echo ">>> 应用 blacklist.c 补丁"
     sed -i 's/char tmp\[1024\];/static char tmp[1024];/' src/blacklist.c
   fi
 
-  # 2. css.c / css_tokenizer.c: 匹配 yyalloc/yyrealloc 签名
+  # 2. css.c: 匹配 yyalloc/yyrealloc 签名
   if grep -q "void \*yyalloc(size_t size)" libwget/css.c; then
     echo ">>> 应用 css.c 补丁"
     sed -i 's/void \*yyalloc(size_t size)/void \*yyalloc(size_t size, void *yyscanner)/' libwget/css.c
     sed -i 's/void \*yyrealloc(void \*p, size_t size)/void \*yyrealloc(void \*p, size_t size, void *yyscanner)/' libwget/css.c
   fi
 
-  # 3. hashfile.c: 兼容 Nettle 4.0 的 digest() API
+  # 3. hashfile.c: Nettle 4.0 API 兼容
   if grep -Fq '(*handle)->hash->digest((*handle)->context, (*handle)->hash->digest_size, digest);' libwget/hashfile.c; then
-    echo ">>> 检测到旧版 Nettle digest() API，应用 Nettle 4.0 补丁"
-    sed -i 's#(*handle)->hash->digest((*handle)->context, (*handle)->hash->digest_size, digest);#(*handle)->hash->digest((*handle)->context, digest);#' libwget/hashfile.c
-  else
-    echo ">>> hashfile.c 未检测到旧版 Nettle digest() API，无需修改"
+    echo ">>> 检测到 Nettle 3.x digest() API，应用 Nettle 4.0 补丁"
+
+    python3 - <<'PY'
+from pathlib import Path
+
+p = Path("libwget/hashfile.c")
+s = p.read_text()
+
+old = "(*handle)->hash->digest((*handle)->context, (*handle)->hash->digest_size, digest);"
+new = "(*handle)->hash->digest((*handle)->context, digest);"
+
+count = s.count(old)
+
+if count != 1:
+    raise SystemExit(f"❌ 找到 {count} 处旧 digest() 调用，预期 1 处")
+
+p.write_text(s.replace(old, new))
+print("✅ hashfile.c Nettle 4.0 API 修复完成")
+PY
   fi
 
-  echo ">>> 当前 hashfile.c digest() 调用："
+  echo ">>> 最终检查 hashfile.c:"
   grep -nF 'hash->digest' libwget/hashfile.c || true
 
   # ========== 配置编译 ==========
