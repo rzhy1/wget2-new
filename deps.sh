@@ -80,7 +80,8 @@ build_gmp() {
   wget -nv -O- ${GNU_MIRROR}/gmp/gmp-6.3.0.tar.xz | tar x --xz
   cd gmp-* || exit
   sed -i '/Test compile: long long reliability test/i echo "int main() { return 0; }" > conftest.c'
-  ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR" --build="$(dpkg-architecture -qDEB_BUILD_GNU_TYPE)"
+  chmod +x configure
+  ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR"
   make -j$(nproc) || exit 1
   make install || exit 1
   cd .. && rm -rf gmp-*
