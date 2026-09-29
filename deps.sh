@@ -79,7 +79,7 @@ build_gmp() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gmp⭐⭐⭐⭐⭐⭐" 
   wget -nv -O- ${GNU_MIRROR}/gmp/gmp-6.3.0.tar.xz | tar x --xz
   cd gmp-* || exit
-  sed -i '/Test compile: long long reliability test/i echo "int main() { return 0; }" > conftest.c'
+  sed -i '/Test compile: long long reliability test/i echo "int main() { return 0; }" > conftest.c' configure
   chmod +x configure
   ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR"
   make -j$(nproc) || exit 1
