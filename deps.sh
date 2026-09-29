@@ -10,8 +10,8 @@ export PKG_CONFIG_PATH="$INSTALLDIR/lib/pkgconfig:/usr/$PREFIX/lib/pkgconfig:$PK
 export PKG_CONFIG_LIBDIR="$INSTALLDIR/lib/pkgconfig"
 export PKG_CONFIG="/usr/bin/${PREFIX}-pkg-config"
 export CPPFLAGS="-I$INSTALLDIR/include"
-export LDFLAGS="-L$INSTALLDIR/lib -static -s"
-export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe  -g0 -fvisibility=hidden"
+export LDFLAGS="-L$INSTALLDIR/lib -static -s -flto=$(nproc)"
+export CFLAGS="-march=tigerlake -mtune=tigerlake -Os -pipe -flto=$(nproc) -g0 -fvisibility=hidden"
 export CXXFLAGS="$CFLAGS"
 export WINEPATH="$INSTALLDIR/bin;$INSTALLDIR/lib;/usr/$PREFIX/bin;/usr/$PREFIX/lib"
 export LD=x86_64-w64-mingw32-ld.lld
@@ -74,7 +74,15 @@ echo "使用镜像源: $GNU_MIRROR" >&2
 
 mkdir -p $INSTALLDIR
 cd $INSTALLDIR
-
+echo "测试"
+x86_64-w64-mingw32-gcc --version
+x86_64-w64-mingw32-gcc -dumpfullversion
+x86_64-w64-mingw32-gcc -dumpmachine
+x86_64-w64-mingw32-gcc -print-prog-name=ld
+which x86_64-w64-mingw32-gcc
+which x86_64-w64-mingw32-ld
+which x86_64-w64-mingw32-ld.lld
+echo "测试结束"
 build_gmp() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gmp⭐⭐⭐⭐⭐⭐" 
   wget -nv -O- ${GNU_MIRROR}/gmp/gmp-6.3.0.tar.xz | tar x --xz
