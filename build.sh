@@ -173,6 +173,17 @@ build_wget2() {
     sed -i 's/void \*yyrealloc(void \*p, size_t size)/void \*yyrealloc(void \*p, size_t size, void *yyscanner)/' libwget/css.c
   fi
 
+  # 3. hashfile.c: 兼容 Nettle 4.0 的 digest() API
+  if grep -Fq '(*handle)->hash->digest((*handle)->context, (*handle)->hash->digest_size, digest);' libwget/hashfile.c; then
+    echo ">>> 检测到旧版 Nettle digest() API，应用 Nettle 4.0 补丁"
+    sed -i 's#(*handle)->hash->digest((*handle)->context, (*handle)->hash->digest_size, digest);#(*handle)->hash->digest((*handle)->context, digest);#' libwget/hashfile.c
+  else
+    echo ">>> hashfile.c 未检测到旧版 Nettle digest() API，无需修改"
+  fi
+
+  echo ">>> 当前 hashfile.c digest() 调用："
+  grep -nF 'hash->digest' libwget/hashfile.c || true
+
   # ========== 配置编译 ==========
   export LDFLAGS="$LDFLAGS -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive"
   export CPPFLAGS="$CPPFLAGS -I$INSTALLDIR/include"
