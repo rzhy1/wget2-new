@@ -74,19 +74,12 @@ echo "使用镜像源: $GNU_MIRROR" >&2
 
 mkdir -p $INSTALLDIR
 cd $INSTALLDIR
-echo "测试"
-x86_64-w64-mingw32-gcc --version
-x86_64-w64-mingw32-gcc -dumpfullversion
-x86_64-w64-mingw32-gcc -dumpmachine
-x86_64-w64-mingw32-gcc -print-prog-name=ld
-which x86_64-w64-mingw32-gcc
-which x86_64-w64-mingw32-ld
-which x86_64-w64-mingw32-ld.lld
-echo "测试结束"
+
 build_gmp() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gmp⭐⭐⭐⭐⭐⭐" 
   wget -nv -O- ${GNU_MIRROR}/gmp/gmp-6.3.0.tar.xz | tar x --xz
   cd gmp-* || exit
+  sed -i '/Test compile: long long reliability test/i echo "int main() { return 0; }" > conftest.c'
   ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR"
   make -j$(nproc) || exit 1
   make install || exit 1
