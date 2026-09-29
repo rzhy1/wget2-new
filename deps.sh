@@ -100,7 +100,7 @@ build_libiconv() {
 build_gpg_error() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gpg-error⭐⭐⭐⭐⭐⭐"
   (
-     wget -q -O- https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.56.tar.gz | tar xz
+     wget -q -O- https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.61.tar.gz | tar xz
      cd libgpg-error-* || exit
      ./configure --host=$PREFIX --disable-shared --prefix="$INSTALLDIR" --enable-static --disable-doc
      make -j$(nproc) && make install
