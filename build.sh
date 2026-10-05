@@ -154,6 +154,7 @@ build_wget2() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build wget2⭐⭐⭐⭐⭐⭐" 
   git clone --depth=1 https://github.com/rockdaboot/wget2.git || exit 1
   cd wget2
+  git config -f .gitmodules submodule.gnulib.url https://github.com/coreutils/gnulib.git
   git submodule update --init --recursive --depth=1 || exit 1
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' lib/Makefile.am || exit 1
   sed -i '/include gnulib.mk/i MAINTAINERCLEANFILES =' tests/Makefile.am || exit 1
