@@ -22,7 +22,6 @@ ln -s $(which lld-link) /usr/bin/x86_64-w64-mingw32-ld.lld
 # --- 镜像自动测速选择 ---
 select_fastest_gnu_mirror() {
     local candidates=(
-        "https://mirrors.aliyun.com/gnu"
         "https://ftp.gnu.org/gnu"
         "http://mirrors.kernel.org/gnu"
     )
