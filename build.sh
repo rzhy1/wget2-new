@@ -63,9 +63,9 @@ build_brotli() {
   sed -i 's/^Libs: .*/& -lbrotlicommon/' "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
   cd ../.. && rm -rf brotli
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommo结果如下⭐⭐⭐⭐⭐⭐" 
-  #pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
-  #echo "显示新版libbrotlidec.pc内容"
-  #cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
+  pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
+  echo "显示新版libbrotlidec.pc内容"
+  cat $INSTALLDIR/lib/pkgconfig/libbrotlidec.pc
 }
 
 build_xz() {
