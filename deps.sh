@@ -86,6 +86,31 @@ build_gmp() {
   cd .. && rm -rf gmp-*
 }
 
+build_brotli() {
+  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build brotli ⭐⭐⭐⭐⭐⭐"
+  wget -nv -O- "https://github.com/google/brotli/archive/v1.2.1.tar.gz" | tar xz
+  cd brotli-* || exit 1
+  mkdir build && cd build
+  cmake .. \
+    -DCMAKE_SYSTEM_NAME=Windows \
+    -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
+    -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
+    -DCMAKE_INSTALL_PREFIX="$INSTALLDIR" \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DBROTLI_DISABLE_TESTS=ON \
+    -DCMAKE_BUILD_TYPE=Release || exit 1
+  make -j$(nproc) install || exit 1
+  echo "显示原版 libbrotlidec.pc 内容"
+  cat "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
+  sed -i 's/^Libs: .*/& -lbrotlicommon/' "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
+  cd ../..
+  rm -rf brotli-*
+  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon 结果如下⭐⭐⭐⭐⭐⭐"
+  pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
+  echo "显示新版 libbrotlidec.pc 内容"
+  cat "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
+}
+
 build_libiconv() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build libiconv⭐⭐⭐⭐⭐⭐" 
   wget -O- ${GNU_MIRROR}/libiconv/libiconv-1.19.tar.gz | tar xz || exit 1
@@ -256,34 +281,34 @@ build_gnutls() {
 }
 
 echo "=== 第一阶段：基础库 ==="
-build_libhsts
-build_gmp
-build_libiconv
-build_libunistring
+build_brotli &
+build_libhsts &
+build_gmp &
+build_libiconv &
+build_libunistring &
 wait
 
 echo "=== 第二阶段：加密基础 ==="
-build_gpg_error
-build_libtasn1
-build_nettle
+build_gpg_error &
+build_libtasn1 &
+build_nettle &
 wait
 
 echo "=== 第三阶段：网络库 ==="
-build_libidn2
-build_libhsts
-build_nghttp2
-build_libmicrohttpd
+build_libidn2 &
+build_libhsts &
+build_nghttp2 &
+build_libmicrohttpd &
 wait
 
 echo "=== 第四阶段：GPG 组件 ==="
-build_libassuan
-wait
-build_gpgme
+build_libassuan &
+build_gpgme &
 wait
 
 echo "=== 第五阶段：最终组件 ==="
-build_libpsl    # 需要 libidn2
-build_gnutls    # 需要 nettle, libtasn1, gmp
+build_libpsl &    # 需要 libidn2
+build_gnutls &    # 需要 nettle, libtasn1, gmp
 wait
 
 cd "$HOME/usr/local"
