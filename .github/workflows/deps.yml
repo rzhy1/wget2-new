@@ -22,7 +22,7 @@ jobs:
             build-essential \
             wget curl git ca-certificates bash \
             autopoint autoconf-archive autoconf automake libtool gettext \
-            mingw-w64 pkg-config-mingw-w64-x86-64 \
+            mingw-w64 pkg-config-mingw-w64-x86-64 cmake  \
             bc lld zstd python3
 
       - name: Compile deps
