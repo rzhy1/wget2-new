@@ -44,31 +44,6 @@ download_deps() {
   cd "$INSTALLDIR" || { echo "❌ $INSTALLDIR 不存在"; exit 1; }
 }
 
-build_brotli() {
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build brotli ⭐⭐⭐⭐⭐⭐"
-  wget -nv -O- "https://github.com/google/brotli/archive/v1.2.1.tar.gz" | tar xz
-  cd brotli-* || exit 1
-  mkdir build && cd build
-  cmake .. \
-    -DCMAKE_SYSTEM_NAME=Windows \
-    -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc \
-    -DCMAKE_CXX_COMPILER=x86_64-w64-mingw32-g++ \
-    -DCMAKE_INSTALL_PREFIX="$INSTALLDIR" \
-    -DBUILD_SHARED_LIBS=OFF \
-    -DBROTLI_DISABLE_TESTS=ON \
-    -DCMAKE_BUILD_TYPE=Release || exit 1
-  make -j$(nproc) install || exit 1
-  echo "显示原版 libbrotlidec.pc 内容"
-  cat "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
-  sed -i 's/^Libs: .*/& -lbrotlicommon/' "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
-  cd ../..
-  rm -rf brotli-*
-  echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon 结果如下⭐⭐⭐⭐⭐⭐"
-  pkg-config --cflags --libs libbrotlienc libbrotlidec libbrotlicommon
-  echo "显示新版 libbrotlidec.pc 内容"
-  cat "$INSTALLDIR/lib/pkgconfig/libbrotlidec.pc"
-}
-
 build_xz() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build xz⭐⭐⭐⭐⭐⭐" 
   apt-get purge xz-utils
@@ -272,7 +247,6 @@ PY
   fi
 }
 download_deps
-build_brotli &
 build_zstd &
 build_zlib-ng &
 build_PCRE2 &
