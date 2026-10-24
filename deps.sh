@@ -281,11 +281,11 @@ build_gnutls() {
 }
 
 echo "=== 第一阶段：基础库 ==="
-build_brotli &
-build_libhsts &
-build_gmp &
-build_libiconv &
-build_libunistring &
+build_brotli
+build_libhsts
+build_gmp
+build_libiconv
+build_libunistring
 wait
 
 echo "=== 第二阶段：加密基础 ==="
@@ -302,8 +302,8 @@ build_libmicrohttpd &
 wait
 
 echo "=== 第四阶段：GPG 组件 ==="
-build_libassuan &
-build_gpgme &
+build_libassuan
+build_gpgme
 wait
 
 echo "=== 第五阶段：最终组件 ==="
