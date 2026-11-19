@@ -244,7 +244,7 @@ build_nettle() {
 
 build_gnutls() {
   echo "⭐⭐⭐⭐⭐⭐$(date '+%Y/%m/%d %a %H:%M:%S.%N') - build gnutls⭐⭐⭐⭐⭐⭐" 
-  wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.13.tar.xz | tar x --xz
+  wget -q -O- https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.14.tar.xz | tar x --xz
       cd gnutls-* || exit
       
       # 下载并应用 Nettle 4.0 兼容性补丁
